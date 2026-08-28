@@ -1,0 +1,30 @@
+# Gradle 빌드 결과와 로컬 캐시
+.gradle/
+build/
+out/
+*.class
+
+# Gradle Wrapper는 저장소에 포함
+!gradle/wrapper/gradle-wrapper.jar
+
+# IntelliJ IDEA 프로젝트 설정
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# macOS Finder 메타데이터
+.DS_Store
+
+# 로그와 JVM 오류 덤프
+*.log
+hs_err_pid*
+*.hprof
+
+# 로컬 환경설정과 비밀값
+.env
+.env.*
+!.env.example
+src/main/resources/application-local.yml
+src/main/resources/application-local.yaml
+src/main/resources/application-local.properties
