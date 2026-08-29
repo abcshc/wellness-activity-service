@@ -84,7 +84,7 @@ class MemberRegistrationServiceTest {
 			"password"
 		);
 		when(memberRepository.existsByEmail("gildong@example.com")).thenReturn(false);
-		when(memberRepository.saveAndFlush(any())).thenThrow(dataIntegrityViolation("uk_members_email"));
+		when(memberRepository.saveAndFlush(any())).thenThrow(dataIntegrityViolation("members.uk_members_email"));
 
 		assertThatThrownBy(() -> memberRegistrationService.register(command))
 			.isInstanceOfSatisfying(BusinessException.class, exception ->
@@ -103,6 +103,22 @@ class MemberRegistrationServiceTest {
 			"password"
 		);
 		DataIntegrityViolationException exception = dataIntegrityViolation("ck_members_nickname");
+		when(memberRepository.existsByEmail("gildong@example.com")).thenReturn(false);
+		when(memberRepository.saveAndFlush(any())).thenThrow(exception);
+
+		assertThatThrownBy(() -> memberRegistrationService.register(command))
+			.isSameAs(exception);
+	}
+
+	@Test
+	void 제약조건명이_없는_무결성_오류는_그대로_전파한다() {
+		MemberRegistrationCommand command = new MemberRegistrationCommand(
+			"홍길동",
+			"길동이",
+			"gildong@example.com",
+			"password"
+		);
+		DataIntegrityViolationException exception = dataIntegrityViolation(null);
 		when(memberRepository.existsByEmail("gildong@example.com")).thenReturn(false);
 		when(memberRepository.saveAndFlush(any())).thenThrow(exception);
 

@@ -12,6 +12,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class MemberRegistrationService {
 
+	private static final String EMAIL_UNIQUE_CONSTRAINT_NAME = "uk_members_email";
+
 	private final MemberRepository memberRepository;
 	private final PasswordHasher passwordHasher;
 
@@ -53,19 +55,25 @@ public class MemberRegistrationService {
 	}
 
 	/**
-	 * 동시 회원가입에서 발생한 명시적 이메일 유니크 제약조건만 클라이언트가 해결할 수 있는 중복 오류로 변환한다.
+	 * MySQL/Hibernate가 추가하는 테이블 접두사를 제외하고, 이메일 유니크 제약조건만 중복 오류로 변환한다.
 	 */
 	private boolean isEmailUniqueConstraintViolation(DataIntegrityViolationException exception) {
 		Throwable cause = exception;
 
 		while (cause != null) {
 			if (cause instanceof ConstraintViolationException constraintViolation
-				&& "uk_members_email".equals(constraintViolation.getConstraintName())) {
+				&& isEmailUniqueConstraintName(constraintViolation.getConstraintName())) {
 				return true;
 			}
 			cause = cause.getCause();
 		}
 
 		return false;
+	}
+
+	private boolean isEmailUniqueConstraintName(String constraintName) {
+		return constraintName != null
+			&& (EMAIL_UNIQUE_CONSTRAINT_NAME.equals(constraintName)
+			|| constraintName.endsWith("." + EMAIL_UNIQUE_CONSTRAINT_NAME));
 	}
 }
