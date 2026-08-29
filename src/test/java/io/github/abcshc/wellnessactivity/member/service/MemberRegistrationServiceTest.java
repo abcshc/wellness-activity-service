@@ -10,6 +10,8 @@ import static org.mockito.Mockito.when;
 import io.github.abcshc.wellnessactivity.common.exception.BusinessException;
 import io.github.abcshc.wellnessactivity.member.error.MemberErrorCode;
 import io.github.abcshc.wellnessactivity.member.repository.MemberRepository;
+import java.sql.SQLException;
+import org.hibernate.exception.ConstraintViolationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -82,7 +84,7 @@ class MemberRegistrationServiceTest {
 			"password"
 		);
 		when(memberRepository.existsByEmail("gildong@example.com")).thenReturn(false);
-		when(memberRepository.saveAndFlush(any())).thenThrow(new DataIntegrityViolationException("duplicate email"));
+		when(memberRepository.saveAndFlush(any())).thenThrow(dataIntegrityViolation("uk_members_email"));
 
 		assertThatThrownBy(() -> memberRegistrationService.register(command))
 			.isInstanceOfSatisfying(BusinessException.class, exception ->
@@ -90,6 +92,29 @@ class MemberRegistrationServiceTest {
 			);
 
 		assertThat(passwordHasher.lastRawPassword).isEqualTo("password");
+	}
+
+	@Test
+	void 이메일_외_제약조건_오류는_중복_이메일_오류로_변환하지_않는다() {
+		MemberRegistrationCommand command = new MemberRegistrationCommand(
+			"홍길동",
+			"길동이",
+			"gildong@example.com",
+			"password"
+		);
+		DataIntegrityViolationException exception = dataIntegrityViolation("ck_members_nickname");
+		when(memberRepository.existsByEmail("gildong@example.com")).thenReturn(false);
+		when(memberRepository.saveAndFlush(any())).thenThrow(exception);
+
+		assertThatThrownBy(() -> memberRegistrationService.register(command))
+			.isSameAs(exception);
+	}
+
+	private DataIntegrityViolationException dataIntegrityViolation(String constraintName) {
+		return new DataIntegrityViolationException(
+			"constraint violation",
+			new ConstraintViolationException("constraint violation", new SQLException(), constraintName)
+		);
 	}
 
 	private static class FakePasswordHasher implements PasswordHasher {

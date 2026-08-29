@@ -5,6 +5,7 @@ import io.github.abcshc.wellnessactivity.member.entity.MemberEntity;
 import io.github.abcshc.wellnessactivity.member.error.MemberErrorCode;
 import io.github.abcshc.wellnessactivity.member.repository.MemberRepository;
 import java.util.Locale;
+import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
@@ -35,10 +36,13 @@ public class MemberRegistrationService {
 		);
 
 		try {
-			// 동시 요청으로 인한 유니크 제약조건 오류를 이 유스케이스 안에서 변환한다.
 			memberRepository.saveAndFlush(member);
 		} catch (DataIntegrityViolationException exception) {
-			throw new BusinessException(MemberErrorCode.EMAIL_ALREADY_EXISTS);
+			if (isEmailUniqueConstraintViolation(exception)) {
+				throw new BusinessException(MemberErrorCode.EMAIL_ALREADY_EXISTS);
+			}
+
+			throw exception;
 		}
 
 		return new MemberRegistrationResult(command.name(), command.nickname(), normalizedEmail);
@@ -46,5 +50,22 @@ public class MemberRegistrationService {
 
 	private String normalizeEmail(String email) {
 		return email.strip().toLowerCase(Locale.ROOT);
+	}
+
+	/**
+	 * 동시 회원가입에서 발생한 명시적 이메일 유니크 제약조건만 클라이언트가 해결할 수 있는 중복 오류로 변환한다.
+	 */
+	private boolean isEmailUniqueConstraintViolation(DataIntegrityViolationException exception) {
+		Throwable cause = exception;
+
+		while (cause != null) {
+			if (cause instanceof ConstraintViolationException constraintViolation
+				&& "uk_members_email".equals(constraintViolation.getConstraintName())) {
+				return true;
+			}
+			cause = cause.getCause();
+		}
+
+		return false;
 	}
 }
