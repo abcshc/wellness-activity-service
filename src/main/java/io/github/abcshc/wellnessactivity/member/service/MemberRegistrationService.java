@@ -1,6 +1,8 @@
 package io.github.abcshc.wellnessactivity.member.service;
 
+import io.github.abcshc.wellnessactivity.common.exception.BusinessException;
 import io.github.abcshc.wellnessactivity.member.entity.MemberEntity;
+import io.github.abcshc.wellnessactivity.member.error.MemberErrorCode;
 import io.github.abcshc.wellnessactivity.member.repository.MemberRepository;
 import java.util.Locale;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -19,7 +21,7 @@ public class MemberRegistrationService {
 		String normalizedEmail = normalizeEmail(command.email());
 
 		if (memberRepository.existsByEmail(normalizedEmail)) {
-			throw new DuplicateEmailException();
+			throw new BusinessException(MemberErrorCode.EMAIL_ALREADY_EXISTS);
 		}
 
 		String passwordHash = passwordHasher.hash(command.password());
@@ -34,7 +36,7 @@ public class MemberRegistrationService {
 			// 동시 요청으로 인한 유니크 제약조건 오류를 이 유스케이스 안에서 변환한다.
 			memberRepository.saveAndFlush(member);
 		} catch (DataIntegrityViolationException exception) {
-			throw new DuplicateEmailException();
+			throw new BusinessException(MemberErrorCode.EMAIL_ALREADY_EXISTS);
 		}
 
 		return new MemberRegistrationResult(command.name(), command.nickname(), normalizedEmail);

@@ -7,6 +7,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.github.abcshc.wellnessactivity.common.exception.BusinessException;
+import io.github.abcshc.wellnessactivity.member.error.MemberErrorCode;
 import io.github.abcshc.wellnessactivity.member.repository.MemberRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -63,7 +65,9 @@ class MemberRegistrationServiceTest {
 		when(memberRepository.existsByEmail("gildong@example.com")).thenReturn(true);
 
 		assertThatThrownBy(() -> memberRegistrationService.register(command))
-			.isInstanceOf(DuplicateEmailException.class);
+			.isInstanceOfSatisfying(BusinessException.class, exception ->
+				assertThat(exception.getErrorCode()).isEqualTo(MemberErrorCode.EMAIL_ALREADY_EXISTS)
+			);
 
 		assertThat(passwordHasher.lastRawPassword).isNull();
 		verify(memberRepository, never()).saveAndFlush(any());
@@ -81,7 +85,9 @@ class MemberRegistrationServiceTest {
 		when(memberRepository.saveAndFlush(any())).thenThrow(new DataIntegrityViolationException("duplicate email"));
 
 		assertThatThrownBy(() -> memberRegistrationService.register(command))
-			.isInstanceOf(DuplicateEmailException.class);
+			.isInstanceOfSatisfying(BusinessException.class, exception ->
+				assertThat(exception.getErrorCode()).isEqualTo(MemberErrorCode.EMAIL_ALREADY_EXISTS)
+			);
 
 		assertThat(passwordHasher.lastRawPassword).isEqualTo("password");
 	}
