@@ -12,6 +12,7 @@
 - 사용자 정의 비즈니스 예외는 오류 코드를 보유합니다.
 - 회원가입의 이메일 중복은 `MEMBER_EMAIL_ALREADY_EXISTS` 오류 코드로 처리합니다.
 - 전역 예외 처리기는 비즈니스 오류를 정의된 HTTP 상태와 공통 오류 응답으로 변환합니다.
+- Bean Validation 오류는 `400 Bad Request` 및 필드별 오류 목록으로 변환합니다.
 - 예상하지 못한 예외는 내부 원인을 숨긴 `INTERNAL_SERVER_ERROR` 응답으로 변환합니다.
 
 ## 오류 응답 형식
@@ -23,21 +24,23 @@
 | `code` | 안정적인 오류 코드 |
 | `message` | 외부에 노출 가능한 오류 메시지 |
 | `path` | 요청 경로 |
-| `fieldErrors` | 필드 검증 오류 목록 |
+| `fieldErrors` | 필드 검증 오류 목록. 일반 도메인 오류에서는 빈 목록 |
 
-현재 일반 도메인 오류의 `fieldErrors`는 빈 목록으로 응답합니다.
+필드 검증 오류의 각 항목은 다음 형식을 사용합니다.
+
+| 필드 | 설명 |
+| --- | --- |
+| `field` | 검증에 실패한 요청 필드명 |
+| `message` | 해당 필드의 검증 실패 메시지 |
 
 ## 오류 응답 테스트
 
-MockMvc 계약 테스트로 비즈니스 오류와 예상하지 못한 오류의 응답 형식을 검증합니다.
+MockMvc 계약 테스트로 비즈니스 오류, 입력값 오류, 예상하지 못한 오류의 응답 형식을 검증합니다.
 
 ## 초기 오류 코드
 
 | 오류 코드 | HTTP 상태 | 설명 |
 | --- | --- | --- |
 | `MEMBER_EMAIL_ALREADY_EXISTS` | `409 Conflict` | 이미 가입된 이메일입니다. |
+| `INVALID_REQUEST` | `400 Bad Request` | 요청값이 올바르지 않습니다. |
 | `INTERNAL_SERVER_ERROR` | `500 Internal Server Error` | 처리 중 알 수 없는 오류가 발생했습니다. |
-
-## 구현 예정 범위
-
-- Bean Validation 오류의 필드별 응답 형식

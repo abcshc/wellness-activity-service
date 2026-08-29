@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -25,6 +26,18 @@ public class GlobalExceptionHandler {
 		return toResponse(exception.getErrorCode(), request);
 	}
 
+	@ExceptionHandler(MethodArgumentNotValidException.class)
+	public ResponseEntity<ErrorResponse> handleMethodArgumentNotValidException(
+		MethodArgumentNotValidException exception,
+		HttpServletRequest request
+	) {
+		List<FieldErrorResponse> fieldErrors = exception.getBindingResult().getFieldErrors().stream()
+			.map(fieldError -> new FieldErrorResponse(fieldError.getField(), fieldError.getDefaultMessage()))
+			.toList();
+
+		return toResponse(CommonErrorCode.INVALID_REQUEST, request, fieldErrors);
+	}
+
 	@ExceptionHandler(Exception.class)
 	public ResponseEntity<ErrorResponse> handleUnexpectedException(
 		Exception exception,
@@ -35,13 +48,21 @@ public class GlobalExceptionHandler {
 	}
 
 	private ResponseEntity<ErrorResponse> toResponse(ErrorCode errorCode, HttpServletRequest request) {
+		return toResponse(errorCode, request, List.of());
+	}
+
+	private ResponseEntity<ErrorResponse> toResponse(
+		ErrorCode errorCode,
+		HttpServletRequest request,
+		List<FieldErrorResponse> fieldErrors
+	) {
 		ErrorResponse response = new ErrorResponse(
 			Instant.now(),
 			errorCode.httpStatus().value(),
 			errorCode.code(),
 			errorCode.message(),
 			request.getRequestURI(),
-			List.of()
+			fieldErrors
 		);
 
 		return ResponseEntity.status(errorCode.httpStatus()).body(response);
