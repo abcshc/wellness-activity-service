@@ -6,7 +6,9 @@ import io.github.abcshc.wellnessactivity.member.error.MemberErrorCode;
 import io.github.abcshc.wellnessactivity.member.repository.MemberRepository;
 import java.util.Locale;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.stereotype.Service;
 
+@Service
 public class MemberRegistrationService {
 
 	private final MemberRepository memberRepository;
