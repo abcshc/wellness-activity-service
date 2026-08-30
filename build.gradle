@@ -39,17 +39,30 @@ dependencies {
 }
 
 tasks.named('test') {
-	useJUnitPlatform {
-		excludeTags 'mysql'
+	useJUnitPlatform()
+}
+
+sourceSets {
+	integrationTest {
+		compileClasspath += sourceSets.main.output + configurations.testRuntimeClasspath
+		runtimeClasspath += output + compileClasspath
 	}
 }
 
-tasks.register('mysqlTest', Test) {
+configurations {
+	integrationTestImplementation.extendsFrom testImplementation
+	integrationTestRuntimeOnly.extendsFrom testRuntimeOnly
+}
+
+tasks.register('integrationTest', Test) {
 	group = 'verification'
-	description = 'Testcontainers MySQL 통합 테스트를 실행합니다.'
-	testClassesDirs = sourceSets.test.output.classesDirs
-	classpath = sourceSets.test.runtimeClasspath
-	useJUnitPlatform {
-		includeTags 'mysql'
-	}
+	description = 'Testcontainers MySQL 기반 통합 테스트를 실행합니다.'
+	testClassesDirs = sourceSets.integrationTest.output.classesDirs
+	classpath = sourceSets.integrationTest.runtimeClasspath
+	useJUnitPlatform()
+	shouldRunAfter tasks.named('test')
+}
+
+tasks.named('check') {
+	dependsOn tasks.named('integrationTest')
 }

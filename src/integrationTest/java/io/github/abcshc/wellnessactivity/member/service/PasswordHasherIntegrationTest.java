@@ -3,11 +3,14 @@ package io.github.abcshc.wellnessactivity.member.service;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.github.abcshc.wellnessactivity.WellnessActivityServiceApplication;
+import io.github.abcshc.wellnessactivity.support.MySqlTestContainerConfiguration;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 
 @SpringBootTest(classes = WellnessActivityServiceApplication.class)
+@Import(MySqlTestContainerConfiguration.class)
 class PasswordHasherIntegrationTest {
 
 	@Autowired

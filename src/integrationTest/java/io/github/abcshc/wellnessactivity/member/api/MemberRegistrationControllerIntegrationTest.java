@@ -5,10 +5,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import io.github.abcshc.wellnessactivity.WellnessActivityServiceApplication;
+import io.github.abcshc.wellnessactivity.support.MySqlTestContainerConfiguration;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 @SpringBootTest(classes = WellnessActivityServiceApplication.class)
 @AutoConfigureMockMvc
 @Transactional
+@Import(MySqlTestContainerConfiguration.class)
 class MemberRegistrationControllerIntegrationTest {
 
 	@Autowired

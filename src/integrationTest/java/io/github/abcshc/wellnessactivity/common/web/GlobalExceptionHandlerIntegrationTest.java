@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import io.github.abcshc.wellnessactivity.WellnessActivityServiceApplication;
 import io.github.abcshc.wellnessactivity.common.exception.BusinessException;
 import io.github.abcshc.wellnessactivity.member.error.MemberErrorCode;
+import io.github.abcshc.wellnessactivity.support.MySqlTestContainerConfiguration;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -20,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @SpringBootTest(classes = WellnessActivityServiceApplication.class)
 @AutoConfigureMockMvc
-@Import(GlobalExceptionHandlerIntegrationTest.ErrorTestController.class)
+@Import({GlobalExceptionHandlerIntegrationTest.ErrorTestController.class, MySqlTestContainerConfiguration.class})
 class GlobalExceptionHandlerIntegrationTest {
 
 	@Autowired

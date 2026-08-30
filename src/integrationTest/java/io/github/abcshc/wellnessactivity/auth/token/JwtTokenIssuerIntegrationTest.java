@@ -3,13 +3,16 @@ package io.github.abcshc.wellnessactivity.auth.token;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.github.abcshc.wellnessactivity.WellnessActivityServiceApplication;
+import io.github.abcshc.wellnessactivity.support.MySqlTestContainerConfiguration;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 
 @SpringBootTest(classes = WellnessActivityServiceApplication.class)
+@Import(MySqlTestContainerConfiguration.class)
 class JwtTokenIssuerIntegrationTest {
 
 	@Autowired

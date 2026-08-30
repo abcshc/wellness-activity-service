@@ -3,13 +3,18 @@ package io.github.abcshc.wellnessactivity.member.service;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.github.abcshc.wellnessactivity.member.repository.MemberRepository;
+import io.github.abcshc.wellnessactivity.support.MySqlTestContainerConfiguration;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
+import org.springframework.context.annotation.Import;
 
 @DataJpaTest
+@Import(MySqlTestContainerConfiguration.class)
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class MemberRegistrationServiceIntegrationTest {
 
 	@Autowired

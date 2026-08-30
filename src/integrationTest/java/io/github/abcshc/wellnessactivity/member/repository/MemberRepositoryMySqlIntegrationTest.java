@@ -8,14 +8,12 @@ import io.github.abcshc.wellnessactivity.member.entity.MemberEntity;
 import io.github.abcshc.wellnessactivity.support.MySqlTestContainerConfiguration;
 import org.hibernate.exception.ConstraintViolationException;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
 
-@Tag("mysql")
 @SpringBootTest(classes = WellnessActivityServiceApplication.class)
 @Import(MySqlTestContainerConfiguration.class)
 class MemberRepositoryMySqlIntegrationTest {

@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import io.github.abcshc.wellnessactivity.WellnessActivityServiceApplication;
 import io.github.abcshc.wellnessactivity.auth.token.AccessToken;
 import io.github.abcshc.wellnessactivity.auth.token.JwtTokenIssuer;
+import io.github.abcshc.wellnessactivity.support.MySqlTestContainerConfiguration;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,7 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @SpringBootTest(classes = WellnessActivityServiceApplication.class)
 @AutoConfigureMockMvc
-@Import(JwtSecurityIntegrationTest.ProtectedResourceController.class)
+@Import({JwtSecurityIntegrationTest.ProtectedResourceController.class, MySqlTestContainerConfiguration.class})
 class JwtSecurityIntegrationTest {
 
 	@Autowired
