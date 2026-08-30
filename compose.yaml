@@ -1,3 +1,5 @@
+# 로컬 개발·검증 환경용 Docker Compose 구성입니다.
+# 운영 배포에는 사용하지 않으며, MySQL과 Flyway Migration 실행을 지원합니다.
 services:
   mysql:
     image: mysql:8.4.8
@@ -19,6 +21,21 @@ services:
       timeout: 3s
       retries: 20
       start_period: 10s
+
+  migration:
+    profiles: ["migration"]
+    build:
+      context: .
+      dockerfile: docker/migration/Dockerfile
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      FLYWAY_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-wellness_activity}
+      FLYWAY_USER: ${MYSQL_USERNAME:-wellness}
+      FLYWAY_PASSWORD: ${MYSQL_PASSWORD:-wellness}
+    command: migrate
+    restart: "no"
 
 volumes:
   wellness_activity_mysql_data:
