@@ -34,17 +34,11 @@ export APP_SECURITY_JWT_ISSUER=wellness-activity-service
 export APP_SECURITY_JWT_SECRET="$(openssl rand -base64 32)"
 ```
 
-기본 실행은 H2를 사용합니다. 애플리케이션 시작 시 Flyway가 스키마를 적용하고, Hibernate는 매핑만 검증합니다.
-
-```bash
-./gradlew bootRun
-```
-
-로컬 MySQL 검증이 필요하면 Docker Compose로 MySQL만 실행한 뒤 `local-mysql` 프로필을 선택합니다. MySQL 데이터는 named volume에 유지됩니다.
+로컬 실행은 Docker Compose의 MySQL을 사용합니다. MySQL 데이터는 named volume에 유지되며, 애플리케이션 시작 시 Flyway가 스키마를 적용하고 Hibernate는 매핑만 검증합니다.
 
 ```bash
 docker compose up -d mysql
-./gradlew bootRun --args='--spring.profiles.active=local-mysql'
+./gradlew bootRun
 ```
 
 컨테이너는 다음 명령으로 중지합니다. 데이터까지 초기화하려면 `-v` 옵션을 추가합니다.
@@ -54,14 +48,16 @@ docker compose down
 ```
 
 ```bash
-./gradlew test build
+./gradlew test
 ```
 
-Docker가 실행 중인 환경에서는 실제 MySQL 호환성 테스트도 실행할 수 있습니다.
+Docker가 실행 중인 환경에서는 Testcontainers 기반 MySQL 통합 테스트를 실행할 수 있습니다.
 
 ```bash
-./gradlew mysqlTest
+./gradlew integrationTest
 ```
+
+`./gradlew build`는 단위 테스트와 통합 테스트를 모두 실행합니다.
 
 - [회원가입 기능](docs/features/member-registration.md)
 - [공통 오류 처리](docs/common/error-handling.md)
