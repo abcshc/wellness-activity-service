@@ -63,4 +63,5 @@ Docker가 실행 중인 환경에서는 Testcontainers 기반 MySQL 통합 테�
 - [공통 오류 처리](docs/common/error-handling.md)
 - [JWT 인증 기반](docs/features/authentication.md)
 - [현재 데이터 모델](docs/data-model.md)
+- [데이터베이스 마이그레이션](docs/database-migration.md)
 - [테스트 전략](docs/testing.md)
