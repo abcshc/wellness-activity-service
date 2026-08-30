@@ -22,17 +22,15 @@ class FlywayMySqlIntegrationTest {
 	private JdbcTemplate jdbcTemplate;
 
 	@Test
-	void MySQL에도_회원_기준선_마이그레이션을_적용한다() {
+	void MySQL에_회원과_Refresh_Token_마이그레이션을_적용한다() {
 		Integer historyCount = jdbcTemplate.queryForObject(
 			"select count(*) from flyway_schema_history",
 			Integer.class
 		);
 
-		assertThat(flyway.info().all()).singleElement()
-			.satisfies(migration -> {
-				assertThat(migration.getVersion().getVersion()).isEqualTo("01");
-				assertThat(migration.getDescription()).isEqualTo("create members");
-			});
-		assertThat(historyCount).isPositive();
+		assertThat(flyway.info().all())
+			.extracting(migration -> migration.getVersion().getVersion())
+			.containsExactly("01", "02");
+		assertThat(historyCount).isEqualTo(2);
 	}
 }

@@ -46,9 +46,15 @@ class ExternalFlywayMigrationIntegrationTest {
 				+ "where table_schema = database() and table_name = 'members'",
 			Integer.class
 		);
+		Integer refreshTokensTableCount = jdbcTemplate.queryForObject(
+			"select count(*) from information_schema.tables "
+				+ "where table_schema = database() and table_name = 'refresh_tokens'",
+			Integer.class
+		);
 
-		assertThat(historyCount).isEqualTo(1);
+		assertThat(historyCount).isEqualTo(2);
 		assertThat(membersTableCount).isEqualTo(1);
+		assertThat(refreshTokensTableCount).isEqualTo(1);
 		assertThat(applicationContext.getBeansOfType(Flyway.class)).isEmpty();
 	}
 
