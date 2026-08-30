@@ -12,8 +12,9 @@
 - BCrypt 기반 비밀번호 해시 저장
 - 이메일 중복 및 요청 필드 검증
 - 공통 오류 응답
+- JWT Bearer Token 인증 기반
 
-로그인과 건강활동 데이터 수집·조회 기능은 아직 구현하지 않았습니다.
+로그인, Refresh Token, 건강활동 데이터 수집·조회 기능은 아직 구현하지 않았습니다.
 
 ## 기술 방향
 
@@ -38,5 +39,6 @@ Docker가 실행 중인 환경에서는 실제 MySQL 호환성 테스트도 실�
 
 - [회원가입 기능](docs/features/member-registration.md)
 - [공통 오류 처리](docs/common/error-handling.md)
+- [JWT 인증 기반](docs/features/authentication.md)
 - [현재 데이터 모델](docs/data-model.md)
 - [테스트 전략](docs/testing.md)
