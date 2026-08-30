@@ -19,13 +19,17 @@ class FlywayConfigurationIntegrationTest {
 	private JdbcTemplate jdbcTemplate;
 
 	@Test
-	void Flyway가_스키마_이력_테이블을_초기화한다() {
+	void Flyway가_회원_기준선_마이그레이션을_적용한다() {
 		Integer historyCount = jdbcTemplate.queryForObject(
 			"select count(*) from flyway_schema_history",
 			Integer.class
 		);
 
-		assertThat(flyway.info().all()).isEmpty();
-		assertThat(historyCount).isEqualTo(1);
+		assertThat(flyway.info().all()).singleElement()
+			.satisfies(migration -> {
+				assertThat(migration.getVersion().getVersion()).isEqualTo("01");
+				assertThat(migration.getDescription()).isEqualTo("create members");
+			});
+		assertThat(historyCount).isPositive();
 	}
 }
