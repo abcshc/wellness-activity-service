@@ -27,6 +27,32 @@
 
 ## 실행과 테스트
 
+JWT 서명 정보는 환경변수로 제공합니다. 아래 예시는 로컬 실행용이며, 생성한 값은 저장소에 포함하지 않습니다.
+
+```bash
+export APP_SECURITY_JWT_ISSUER=wellness-activity-service
+export APP_SECURITY_JWT_SECRET="$(openssl rand -base64 32)"
+```
+
+기본 실행은 H2를 사용합니다. 애플리케이션 시작 시 Flyway가 스키마를 적용하고, Hibernate는 매핑만 검증합니다.
+
+```bash
+./gradlew bootRun
+```
+
+로컬 MySQL 검증이 필요하면 Docker Compose로 MySQL만 실행한 뒤 `local-mysql` 프로필을 선택합니다. MySQL 데이터는 named volume에 유지됩니다.
+
+```bash
+docker compose up -d mysql
+./gradlew bootRun --args='--spring.profiles.active=local-mysql'
+```
+
+컨테이너는 다음 명령으로 중지합니다. 데이터까지 초기화하려면 `-v` 옵션을 추가합니다.
+
+```bash
+docker compose down
+```
+
 ```bash
 ./gradlew test build
 ```
