@@ -40,4 +40,12 @@ public class MemberEntity {
 		this.email = email;
 		this.passwordHash = passwordHash;
 	}
+
+	public Long getId() {
+		return id;
+	}
+
+	public String getPasswordHash() {
+		return passwordHash;
+	}
 }

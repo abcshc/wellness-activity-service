@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
 import io.github.abcshc.wellnessactivity.WellnessActivityServiceApplication;
+import io.github.abcshc.wellnessactivity.auth.token.repository.RefreshTokenRepository;
 import io.github.abcshc.wellnessactivity.member.entity.MemberEntity;
 import io.github.abcshc.wellnessactivity.support.MySqlTestContainerConfiguration;
 import org.hibernate.exception.ConstraintViolationException;
@@ -21,8 +22,12 @@ class MemberRepositoryMySqlIntegrationTest {
 	@Autowired
 	private MemberRepository memberRepository;
 
+	@Autowired
+	private RefreshTokenRepository refreshTokenRepository;
+
 	@AfterEach
 	void tearDown() {
+		refreshTokenRepository.deleteAll();
 		memberRepository.deleteAll();
 	}
 

@@ -82,4 +82,20 @@ public class RefreshTokenEntity {
 		this.issuedAt = issuedAt;
 		this.expiresAt = expiresAt;
 	}
+
+	public String getTokenHash() {
+		return tokenHash;
+	}
+
+	public String getFamilyId() {
+		return familyId;
+	}
+
+	public Instant getIssuedAt() {
+		return issuedAt;
+	}
+
+	public Instant getExpiresAt() {
+		return expiresAt;
+	}
 }
