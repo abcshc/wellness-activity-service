@@ -63,6 +63,23 @@ class MemberRegistrationControllerIntegrationTest {
 	}
 
 	@Test
+	void 앞뒤_공백이_있는_이메일은_필드_오류로_반환한다() throws Exception {
+		mockMvc.perform(post("/api/v1/members")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("""
+					{
+					  "name": "홍길동",
+					  "nickname": "길동이",
+					  "email": " gildong@example.com ",
+					  "password": "password"
+					}
+					"""))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+			.andExpect(jsonPath("$.fieldErrors[?(@.field == 'email')]").isNotEmpty());
+	}
+
+	@Test
 	void UTF8_기준_73바이트_비밀번호는_필드_오류로_반환한다() throws Exception {
 		mockMvc.perform(post("/api/v1/members")
 				.contentType(MediaType.APPLICATION_JSON)
