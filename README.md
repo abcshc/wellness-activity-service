@@ -12,9 +12,10 @@
 - BCrypt 기반 비밀번호 해시 저장
 - 이메일 중복 및 요청 필드 검증
 - 공통 오류 응답
-- JWT Bearer Token 인증 기반
+- JWT Bearer Token 인증
+- 이메일·비밀번호 로그인, Refresh Token 회전, 로그아웃
 
-로그인, Refresh Token, 건강활동 데이터 수집·조회 기능은 아직 구현하지 않았습니다.
+건강활동 데이터 수집·조회 기능은 아직 구현하지 않았습니다.
 
 ## 기술 방향
 
@@ -47,6 +48,8 @@ docker compose up -d mysql
 docker compose down
 ```
 
+단위 테스트는 다음 명령으로 실행합니다.
+
 ```bash
 ./gradlew test
 ```
@@ -57,7 +60,11 @@ Docker가 실행 중인 환경에서는 Testcontainers 기반 MySQL 통합 테�
 ./gradlew integrationTest
 ```
 
-`./gradlew build`는 단위 테스트와 통합 테스트를 모두 실행합니다.
+전체 검증은 다음 명령으로 실행합니다. `build`는 단위 테스트와 통합 테스트를 모두 실행합니다.
+
+```bash
+./gradlew build
+```
 
 - [회원가입 기능](docs/features/member-registration.md)
 - [공통 오류 처리](docs/common/error-handling.md)

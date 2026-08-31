@@ -50,6 +50,35 @@
 
 서명 키 원문은 저장소, 설정 파일, 로그에 포함하지 않습니다. 테스트는 별도의 테스트 전용 설정값을 사용합니다.
 
+## 인증 API 사용법
+
+### 로그인
+
+`POST /api/v1/auth/login`
+
+```json
+{
+  "email": "member@example.com",
+  "password": "password"
+}
+```
+
+성공하면 다음 형식으로 Access Token, Refresh Token, Access Token 만료 시각을 반환합니다. Access Token은 15분 동안 유효합니다.
+
+```json
+{
+  "accessToken": "...",
+  "refreshToken": "...",
+  "accessTokenExpiresAt": "2026-01-01T00:15:00Z"
+}
+```
+
+보호 API에는 다음 형식으로 Access Token을 전달합니다.
+
+```http
+Authorization: Bearer {accessToken}
+```
+
 ## Refresh Token 회전
 
 - Refresh Token 원문은 저장하지 않고 SHA-256 해시만 MySQL에 저장합니다.
@@ -68,13 +97,28 @@
 }
 ```
 
-성공하면 새 Access Token, 새 Refresh Token, Access Token 만료 시각을 반환합니다. Refresh Token은 URL, 로그, 오류 응답에 포함하지 않습니다.
+성공하면 로그인과 같은 응답 형식으로 새 Access Token, 새 Refresh Token, Access Token 만료 시각을 반환합니다. Refresh Token은 URL, 로그, 오류 응답에 포함하지 않습니다.
 
 ## 로그아웃
 
-`POST /api/v1/auth/logout`은 요청 본문의 `refreshToken`으로 해당 토큰 계열의 활성 Refresh Token을 폐기하고 `204 No Content`를 반환합니다. 존재하지 않거나 이미 만료·폐기된 토큰도 동일하게 `204`를 반환합니다.
+`POST /api/v1/auth/logout`
+
+```json
+{
+  "refreshToken": "..."
+}
+```
+
+요청 본문의 `refreshToken`으로 해당 토큰 계열의 활성 Refresh Token을 폐기하고 `204 No Content`를 반환합니다. 존재하지 않거나 이미 만료·폐기된 토큰도 동일하게 `204`를 반환합니다.
 
 Access Token은 Stateless JWT이므로 로그아웃 후에도 만료 시각까지 최대 15분 동안 유효할 수 있습니다.
+
+## 인증 오류
+
+| 오류 코드 | HTTP 상태 | 설명 |
+| --- | --- | --- |
+| `AUTH_INVALID_CREDENTIALS` | `401 Unauthorized` | 이메일 또는 비밀번호가 올바르지 않습니다. |
+| `AUTH_INVALID_REFRESH_TOKEN` | `401 Unauthorized` | Refresh Token이 유효하지 않습니다. 만료·위조·회전·폐기 여부는 구분하지 않습니다. |
 
 ## 검증
 

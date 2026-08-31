@@ -42,5 +42,7 @@ MockMvc 계약 테스트로 비즈니스 오류, 입력값 오류, 예상하지 
 | 오류 코드 | HTTP 상태 | 설명 |
 | --- | --- | --- |
 | `MEMBER_EMAIL_ALREADY_EXISTS` | `409 Conflict` | 이미 가입된 이메일입니다. |
+| `AUTH_INVALID_CREDENTIALS` | `401 Unauthorized` | 이메일 또는 비밀번호가 올바르지 않습니다. |
+| `AUTH_INVALID_REFRESH_TOKEN` | `401 Unauthorized` | 유효하지 않은 Refresh Token입니다. |
 | `INVALID_REQUEST` | `400 Bad Request` | 요청값이 올바르지 않습니다. |
 | `INTERNAL_SERVER_ERROR` | `500 Internal Server Error` | 처리 중 알 수 없는 오류가 발생했습니다. |
