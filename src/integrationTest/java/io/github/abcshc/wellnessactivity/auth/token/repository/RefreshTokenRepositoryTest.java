@@ -99,6 +99,34 @@ class RefreshTokenRepositoryTest {
 		assertThat(refreshTokenRepository.findAllByMemberAndStatus(member, RefreshTokenStatus.ACTIVE)).hasSize(1);
 	}
 
+	@Test
+	void 활성_Refresh_Token은_조건부_갱신으로_한번만_회전할_수_있다() {
+		MemberEntity member = savedMember("rotate@example.com");
+		String familyId = UUID.randomUUID().toString();
+		RefreshTokenEntity currentToken = refreshToken(member, "e".repeat(64), familyId);
+		RefreshTokenEntity replacementToken = refreshToken(member, "f".repeat(64), familyId);
+		refreshTokenRepository.saveAndFlush(currentToken);
+		refreshTokenRepository.saveAndFlush(replacementToken);
+
+		assertThat(refreshTokenRepository.rotateActiveToken(
+			currentToken.getId(),
+			replacementToken,
+			RefreshTokenStatus.ACTIVE,
+			RefreshTokenStatus.ROTATED
+		)).isEqualTo(1);
+		assertThat(refreshTokenRepository.rotateActiveToken(
+			currentToken.getId(),
+			replacementToken,
+			RefreshTokenStatus.ACTIVE,
+			RefreshTokenStatus.ROTATED
+		)).isZero();
+		entityManager.clear();
+
+		RefreshTokenEntity rotatedToken = refreshTokenRepository.findByTokenHashForUpdate("e".repeat(64)).orElseThrow();
+		assertThat(rotatedToken.isRotated()).isTrue();
+		assertThat(rotatedToken.hasReplacement()).isTrue();
+	}
+
 	private MemberEntity savedMember(String email) {
 		return memberRepository.saveAndFlush(new MemberEntity(
 			"홍길동",
