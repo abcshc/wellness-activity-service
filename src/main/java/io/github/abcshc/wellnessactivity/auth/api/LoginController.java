@@ -2,6 +2,8 @@ package io.github.abcshc.wellnessactivity.auth.api;
 
 import io.github.abcshc.wellnessactivity.auth.service.LoginCommand;
 import io.github.abcshc.wellnessactivity.auth.service.LoginService;
+import io.github.abcshc.wellnessactivity.auth.service.LogoutCommand;
+import io.github.abcshc.wellnessactivity.auth.service.LogoutService;
 import io.github.abcshc.wellnessactivity.auth.service.RefreshTokenCommand;
 import io.github.abcshc.wellnessactivity.auth.service.RefreshTokenService;
 import jakarta.validation.Valid;
@@ -17,10 +19,16 @@ public class LoginController {
 
 	private final LoginService loginService;
 	private final RefreshTokenService refreshTokenService;
+	private final LogoutService logoutService;
 
-	public LoginController(LoginService loginService, RefreshTokenService refreshTokenService) {
+	public LoginController(
+		LoginService loginService,
+		RefreshTokenService refreshTokenService,
+		LogoutService logoutService
+	) {
 		this.loginService = loginService;
 		this.refreshTokenService = refreshTokenService;
+		this.logoutService = logoutService;
 	}
 
 	@PostMapping("/login")
@@ -36,5 +44,11 @@ public class LoginController {
 		return ResponseEntity.ok(RefreshTokenResponse.from(refreshTokenService.refresh(
 			new RefreshTokenCommand(request.refreshToken())
 		)));
+	}
+
+	@PostMapping("/logout")
+	public ResponseEntity<Void> logout(@Valid @RequestBody RefreshTokenRequest request) {
+		logoutService.logout(new LogoutCommand(request.refreshToken()));
+		return ResponseEntity.noContent().build();
 	}
 }

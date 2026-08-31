@@ -14,9 +14,9 @@
 - 인증 실패 시 공통 오류 응답
 - 회원가입 API의 비인증 접근 허용
 - 이메일·비밀번호 로그인과 Access Token·Refresh Token 발급
-- Refresh Token의 해시 저장과 회전
+- Refresh Token의 해시 저장, 회전, 로그아웃
 
-로그아웃과 건강활동 API는 아직 구현하지 않았습니다.
+건강활동 API는 아직 구현하지 않았습니다.
 
 ## 접근 정책
 
@@ -25,7 +25,7 @@
 | `POST /api/v1/members` | 비인증 허용 |
 | `POST /api/v1/auth/login` | 비인증 허용 |
 | `POST /api/v1/auth/refresh` | 비인증 허용 |
-| `POST /api/v1/auth/logout` | 비인증 허용. API 구현 전 |
+| `POST /api/v1/auth/logout` | 비인증 허용 |
 | 그 외 경로 | Bearer JWT 인증 필요 |
 
 유효하지 않거나 없는 Bearer Token으로 보호 경로에 접근하면 다음 형식의 `401 Unauthorized` 응답을 반환합니다.
@@ -70,9 +70,16 @@
 
 성공하면 새 Access Token, 새 Refresh Token, Access Token 만료 시각을 반환합니다. Refresh Token은 URL, 로그, 오류 응답에 포함하지 않습니다.
 
+## 로그아웃
+
+`POST /api/v1/auth/logout`은 요청 본문의 `refreshToken`으로 해당 토큰 계열의 활성 Refresh Token을 폐기하고 `204 No Content`를 반환합니다. 존재하지 않거나 이미 만료·폐기된 토큰도 동일하게 `204`를 반환합니다.
+
+Access Token은 Stateless JWT이므로 로그아웃 후에도 만료 시각까지 최대 15분 동안 유효할 수 있습니다.
+
 ## 검증
 
 - 회원 ID를 `sub` Claim으로 담아 Access Token을 발급합니다.
 - JWT 서명, 만료 시각, 발행자를 검증합니다.
 - 유효한 Bearer Token만 보호 경로의 인증 필터를 통과하는지 MockMvc로 검증합니다.
 - Testcontainers MySQL에서 Refresh Token 회전, 재사용 감지, 동시 갱신 시 하나만 성공하는 동작을 검증합니다.
+- 로그아웃 뒤 Refresh Token 갱신이 거부되고, 반복 로그아웃이 항상 `204`를 반환하는지 검증합니다.
