@@ -17,6 +17,8 @@
 
 건강활동 데이터 수집·조회 기능은 아직 구현하지 않았습니다.
 
+구현 전 확정한 활동 데이터의 기능 범위와 입력 정규화 기준은 [건강활동 데이터 기능 명세](docs/features/activity-data.md)에서 확인할 수 있습니다.
+
 ## 기술 방향
 
 - Java 17
@@ -69,6 +71,7 @@ Docker가 실행 중인 환경에서는 Testcontainers 기반 MySQL 통합 테�
 - [회원가입 기능](docs/features/member-registration.md)
 - [공통 오류 처리](docs/common/error-handling.md)
 - [JWT 인증 기반](docs/features/authentication.md)
+- [건강활동 데이터 기능 명세](docs/features/activity-data.md)
 - [현재 데이터 모델](docs/data-model.md)
 - [데이터베이스 마이그레이션](docs/database-migration.md)
 - [테스트 전략](docs/testing.md)
