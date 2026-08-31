@@ -51,10 +51,36 @@ class ExternalFlywayMigrationIntegrationTest {
 				+ "where table_schema = database() and table_name = 'refresh_tokens'",
 			Integer.class
 		);
+		Integer memberActivityKeysTableCount = jdbcTemplate.queryForObject(
+			"select count(*) from information_schema.tables "
+				+ "where table_schema = database() and table_name = 'member_activity_keys'",
+			Integer.class
+		);
+		Integer stepRecordsTableCount = jdbcTemplate.queryForObject(
+			"select count(*) from information_schema.tables "
+				+ "where table_schema = database() and table_name = 'step_records'",
+			Integer.class
+		);
+		Integer recordKeyUniqueConstraintCount = jdbcTemplate.queryForObject(
+			"select count(*) from information_schema.statistics "
+				+ "where table_schema = database() and table_name = 'member_activity_keys' "
+				+ "and index_name = 'uk_member_activity_keys_record_key' and non_unique = 0",
+			Integer.class
+		);
+		Integer stepRecordUniqueConstraintCount = jdbcTemplate.queryForObject(
+			"select count(*) from information_schema.statistics "
+				+ "where table_schema = database() and table_name = 'step_records' "
+				+ "and index_name = 'uk_step_records_key_provider_period' and non_unique = 0",
+			Integer.class
+		);
 
-		assertThat(historyCount).isEqualTo(2);
+		assertThat(historyCount).isEqualTo(5);
 		assertThat(membersTableCount).isEqualTo(1);
 		assertThat(refreshTokensTableCount).isEqualTo(1);
+		assertThat(memberActivityKeysTableCount).isEqualTo(1);
+		assertThat(stepRecordsTableCount).isEqualTo(1);
+		assertThat(recordKeyUniqueConstraintCount).isEqualTo(1);
+		assertThat(stepRecordUniqueConstraintCount).isEqualTo(4);
 		assertThat(applicationContext.getBeansOfType(Flyway.class)).isEmpty();
 	}
 

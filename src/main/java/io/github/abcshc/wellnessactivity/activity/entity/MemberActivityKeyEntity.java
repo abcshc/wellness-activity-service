@@ -12,13 +12,14 @@ import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 @Entity
 @Table(
 	name = "member_activity_keys",
+	uniqueConstraints = @UniqueConstraint(name = "uk_member_activity_keys_record_key", columnNames = "record_key"),
 	indexes = {
-		@Index(name = "idx_member_activity_keys_member_id", columnList = "member_id"),
-		@Index(name = "idx_member_activity_keys_record_key", columnList = "record_key")
+		@Index(name = "idx_member_activity_keys_member_id", columnList = "member_id")
 	}
 )
 public class MemberActivityKeyEntity {
@@ -44,5 +45,16 @@ public class MemberActivityKeyEntity {
 	public MemberActivityKeyEntity(MemberEntity member, String recordKey) {
 		this.member = member;
 		this.recordKey = recordKey;
+	}
+
+	public Long getId() {
+		return id;
+	}
+
+	public boolean isOwnedBy(MemberEntity member) {
+		if (this.member == member) {
+			return true;
+		}
+		return this.member.getId() != null && this.member.getId().equals(member.getId());
 	}
 }

@@ -26,7 +26,7 @@ erDiagram
     MEMBER_ACTIVITY_KEYS {
         bigint id PK
         bigint member_id FK
-        varchar record_key
+        varchar record_key UK
     }
     STEP_RECORDS {
         bigint id PK
@@ -81,9 +81,9 @@ erDiagram
 | --- | --- | --- | --- |
 | `id` | `BIGINT` | PK, 자동 생성 | 내부 활동 주체 식별자 |
 | `member_id` | `BIGINT` | NOT NULL, FK | 활동 주체를 소유한 회원 |
-| `record_key` | `VARCHAR(255)` | NOT NULL, INDEX (`idx_member_activity_keys_record_key`) | 과제 입력의 사용자 구분 키 |
+| `record_key` | `VARCHAR(255)` | NOT NULL, UNIQUE (`uk_member_activity_keys_record_key`) | 과제 입력의 사용자 구분 키 |
 
-`idx_member_activity_keys_member_id` 인덱스는 인증 회원이 소유한 활동 키를 찾는 데 사용합니다.
+`record_key` 유니크 제약조건은 한 키가 하나의 회원에게만 연결되도록 보장합니다. `idx_member_activity_keys_member_id` 인덱스는 인증 회원이 소유한 활동 키를 찾는 데 사용합니다.
 
 ## step_records
 
@@ -100,7 +100,7 @@ erDiagram
 | `distance_km` | `DECIMAL(30,20)` | NOT NULL | 원천 거리(km) |
 | `calories_kcal` | `DECIMAL(30,20)` | NOT NULL | 원천 칼로리(kcal) |
 
-`idx_step_records_key_provider_period`는 회원별 활동 키·provider·시작·종료 시각으로 재전송 후보를 찾는 데 사용합니다. 최초 원본 유지와 중복 무시는 애플리케이션 서비스에서 처리합니다.
+`uk_step_records_key_provider_period` 유니크 제약조건은 회원별 활동 키·provider·시작·종료 시각이 같은 원본 이벤트의 중복 저장을 막습니다. 업로드 서비스는 MySQL `INSERT IGNORE`로 충돌을 오류 없이 무시해 최초 원본을 유지합니다.
 
 `idx_step_records_key_started_at_utc` 인덱스는 회원별 활동 키의 기간 조회와 일·월 집계에 사용합니다.
 

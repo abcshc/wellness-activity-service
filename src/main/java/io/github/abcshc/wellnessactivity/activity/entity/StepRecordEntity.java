@@ -13,17 +13,18 @@ import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.math.BigDecimal;
 import java.time.Instant;
 
 @Entity
 @Table(
 	name = "step_records",
+	uniqueConstraints = @UniqueConstraint(
+		name = "uk_step_records_key_provider_period",
+		columnNames = {"member_activity_key_id", "provider", "started_at_utc", "ended_at_utc"}
+	),
 	indexes = {
-		@Index(
-			name = "idx_step_records_key_provider_period",
-			columnList = "member_activity_key_id,provider,started_at_utc,ended_at_utc"
-		),
 		@Index(
 			name = "idx_step_records_key_started_at_utc",
 			columnList = "member_activity_key_id,started_at_utc"
@@ -83,4 +84,5 @@ public class StepRecordEntity {
 		this.distance = distance;
 		this.calories = calories;
 	}
+
 }

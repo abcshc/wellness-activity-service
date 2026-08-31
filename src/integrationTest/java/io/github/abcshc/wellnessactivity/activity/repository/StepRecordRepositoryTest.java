@@ -47,7 +47,7 @@ class StepRecordRepositoryTest {
 		));
 		entityManager.clear();
 
-		assertThat(memberActivityKeyRepository.findAllByRecordKey("record-key-001")).hasSize(1);
+		assertThat(memberActivityKeyRepository.findByRecordKey("record-key-001")).isPresent();
 		assertThat(stepRecordRepository.count()).isEqualTo(1);
 	}
 
