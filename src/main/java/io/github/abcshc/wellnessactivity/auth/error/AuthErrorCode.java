@@ -5,7 +5,8 @@ import org.springframework.http.HttpStatus;
 
 public enum AuthErrorCode implements ErrorCode {
 
-	INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "AUTH_INVALID_CREDENTIALS", "이메일 또는 비밀번호가 올바르지 않습니다.");
+	INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "AUTH_INVALID_CREDENTIALS", "이메일 또는 비밀번호가 올바르지 않습니다."),
+	INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH_INVALID_REFRESH_TOKEN", "Refresh Token이 유효하지 않습니다.");
 
 	private final HttpStatus httpStatus;
 	private final String code;

@@ -87,6 +87,10 @@ public class RefreshTokenEntity {
 		return tokenHash;
 	}
 
+	public Long getId() {
+		return id;
+	}
+
 	public String getFamilyId() {
 		return familyId;
 	}
@@ -98,4 +102,25 @@ public class RefreshTokenEntity {
 	public Instant getExpiresAt() {
 		return expiresAt;
 	}
+
+	public MemberEntity getMember() {
+		return member;
+	}
+
+	public boolean isActive() {
+		return status == RefreshTokenStatus.ACTIVE;
+	}
+
+	public boolean isRotated() {
+		return status == RefreshTokenStatus.ROTATED;
+	}
+
+	public boolean isExpiredAt(Instant now) {
+		return !expiresAt.isAfter(now);
+	}
+
+	public boolean hasReplacement() {
+		return replacedByToken != null;
+	}
+
 }

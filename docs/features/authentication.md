@@ -13,16 +13,18 @@
 - JWT의 서명, 만료 시각, 발행자 검증
 - 인증 실패 시 공통 오류 응답
 - 회원가입 API의 비인증 접근 허용
+- 이메일·비밀번호 로그인과 Access Token·Refresh Token 발급
+- Refresh Token의 해시 저장과 회전
 
-로그인, Refresh Token 발급·회전, 로그아웃, 건강활동 API는 아직 구현하지 않았습니다.
+로그아웃과 건강활동 API는 아직 구현하지 않았습니다.
 
 ## 접근 정책
 
 | 경로 | 현재 정책 |
 | --- | --- |
 | `POST /api/v1/members` | 비인증 허용 |
-| `POST /api/v1/auth/login` | 비인증 허용. API 구현 전 |
-| `POST /api/v1/auth/refresh` | 비인증 허용. API 구현 전 |
+| `POST /api/v1/auth/login` | 비인증 허용 |
+| `POST /api/v1/auth/refresh` | 비인증 허용 |
 | `POST /api/v1/auth/logout` | 비인증 허용. API 구현 전 |
 | 그 외 경로 | Bearer JWT 인증 필요 |
 
@@ -48,8 +50,29 @@
 
 서명 키 원문은 저장소, 설정 파일, 로그에 포함하지 않습니다. 테스트는 별도의 테스트 전용 설정값을 사용합니다.
 
+## Refresh Token 회전
+
+- Refresh Token 원문은 저장하지 않고 SHA-256 해시만 MySQL에 저장합니다.
+- 로그인과 갱신 시 새 Refresh Token은 발급·회전 시점부터 14일 동안 유효합니다.
+- 갱신에 성공하면 기존 토큰은 `ROTATED` 상태로 보존하고, 새 토큰을 같은 계열로 연결합니다.
+- 회전·폐기된 토큰의 재사용은 탈취 가능성으로 간주합니다. 해당 계열의 활성 토큰을 폐기하고, 외부에는 `401 AUTH_INVALID_REFRESH_TOKEN`만 반환합니다.
+- 동일 Refresh Token에 대한 갱신 요청은 클라이언트에서 직렬화해야 합니다. 동시에 전송된 후속 요청은 재사용으로 감지되어 토큰 계열이 폐기될 수 있습니다.
+
+### 토큰 갱신 API
+
+`POST /api/v1/auth/refresh`
+
+```json
+{
+  "refreshToken": "..."
+}
+```
+
+성공하면 새 Access Token, 새 Refresh Token, Access Token 만료 시각을 반환합니다. Refresh Token은 URL, 로그, 오류 응답에 포함하지 않습니다.
+
 ## 검증
 
 - 회원 ID를 `sub` Claim으로 담아 Access Token을 발급합니다.
 - JWT 서명, 만료 시각, 발행자를 검증합니다.
 - 유효한 Bearer Token만 보호 경로의 인증 필터를 통과하는지 MockMvc로 검증합니다.
+- Testcontainers MySQL에서 Refresh Token 회전, 재사용 감지, 동시 갱신 시 하나만 성공하는 동작을 검증합니다.
