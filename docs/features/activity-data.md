@@ -1,6 +1,6 @@
 # 건강활동 데이터
 
-> 상태: 입력 정규화·업로드 API·일별·월별 집계 서비스 구현, 조회 API 구현 예정
+> 상태: 입력 정규화·업로드·일별·월별 조회 API 구현
 
 ## 목적
 
@@ -82,7 +82,7 @@ UNIQUE (member_activity_key_id, provider, started_at_utc, ended_at_utc)
 - 이미 다른 회원에게 연결된 `recordkey`는 사용할 수 없습니다.
 - 회원은 자신에게 연결된 `recordkey`의 활동만 조회할 수 있습니다.
 
-## 제공 예정 기능
+## 제공 기능
 
 | 기능 | 설명 |
 | --- | --- |
@@ -92,10 +92,34 @@ UNIQUE (member_activity_key_id, provider, started_at_utc, ended_at_utc)
 
 ## 조회 계약
 
+- `GET /api/v1/activities/steps/daily`와 `GET /api/v1/activities/steps/monthly`는 JWT 인증이 필요합니다.
 - Daily 조회는 `from`·`to`의 한국 날짜(`YYYY-MM-DD`) 범위를 양 끝 포함으로 받습니다.
 - Monthly 조회는 `from`·`to`의 한국 연월(`YYYY-MM`) 범위를 양 끝 포함으로 받습니다.
+- `recordkey`, `from`, `to`는 모두 필수이며, Daily는 최대 366일, Monthly는 최대 24개월까지 조회할 수 있습니다.
 - 요청 범위의 모든 날짜·월을 순서대로 반환하며, 활동이 없는 항목의 `steps`, `calories`, `distance`는 `0`입니다.
 - 각 결과에는 조회 기준인 `recordkey`를 포함합니다.
+- 존재하지 않거나 인증 회원이 소유하지 않은 `recordkey`는 같은 `403 Forbidden` 오류로 처리합니다.
+
+### Daily 예시
+
+```http
+GET /api/v1/activities/steps/daily?recordkey=record-key-001&from=2024-11-14&to=2024-11-15
+Authorization: Bearer <access-token>
+```
+
+```json
+[
+  {
+    "recordkey": "record-key-001",
+    "date": "2024-11-14",
+    "steps": 0,
+    "distanceKm": 0,
+    "caloriesKcal": 0
+  }
+]
+```
+
+Monthly 응답은 `date` 대신 `month`(`YYYY-MM`)를 사용하며, 나머지 필드는 동일합니다.
 
 ## 업로드 결과 계약
 

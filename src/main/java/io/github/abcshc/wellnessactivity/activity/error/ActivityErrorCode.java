@@ -14,6 +14,10 @@ public enum ActivityErrorCode implements ErrorCode {
 	INVALID_DISTANCE("ACTIVITY_INVALID_DISTANCE", "이동 거리가 올바르지 않습니다."),
 	INVALID_CALORIES_UNIT("ACTIVITY_INVALID_CALORIES_UNIT", "칼로리 단위는 kcal이어야 합니다."),
 	INVALID_CALORIES("ACTIVITY_INVALID_CALORIES", "소모 칼로리가 올바르지 않습니다."),
+	INVALID_DAILY_RANGE("ACTIVITY_INVALID_DAILY_RANGE", "일별 조회 기간이 올바르지 않습니다."),
+	DAILY_RANGE_TOO_LARGE("ACTIVITY_DAILY_RANGE_TOO_LARGE", "일별 조회 기간은 최대 366일입니다."),
+	INVALID_MONTHLY_RANGE("ACTIVITY_INVALID_MONTHLY_RANGE", "월별 조회 기간이 올바르지 않습니다."),
+	MONTHLY_RANGE_TOO_LARGE("ACTIVITY_MONTHLY_RANGE_TOO_LARGE", "월별 조회 기간은 최대 24개월입니다."),
 	RECORD_KEY_FORBIDDEN(HttpStatus.FORBIDDEN, "ACTIVITY_RECORD_KEY_FORBIDDEN", "다른 회원에게 연결된 recordkey입니다.");
 
 	private final HttpStatus httpStatus;
