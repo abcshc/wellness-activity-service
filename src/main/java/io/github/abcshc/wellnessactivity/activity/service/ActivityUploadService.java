@@ -5,7 +5,6 @@ import io.github.abcshc.wellnessactivity.activity.error.ActivityErrorCode;
 import io.github.abcshc.wellnessactivity.activity.repository.MemberActivityKeyRepository;
 import io.github.abcshc.wellnessactivity.activity.repository.StepRecordRepository;
 import io.github.abcshc.wellnessactivity.common.exception.BusinessException;
-import io.github.abcshc.wellnessactivity.member.entity.MemberEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,7 +23,7 @@ public class ActivityUploadService {
 	}
 
 	@Transactional
-	public ActivityUploadResult upload(MemberEntity member, ActivityInputNormalizationResult normalizationResult) {
+	public ActivityUploadResult upload(Long memberId, ActivityInputNormalizationResult normalizationResult) {
 		ActivityUploadCommand command = normalizationResult.command();
 		if (command.records().isEmpty()) {
 			return new ActivityUploadResult(
@@ -35,11 +34,11 @@ public class ActivityUploadService {
 				normalizationResult.invalidEntries()
 			);
 		}
-		memberActivityKeyRepository.insertIgnore(member.getId(), command.recordKey());
+		memberActivityKeyRepository.insertIgnore(memberId, command.recordKey());
 		MemberActivityKeyEntity memberActivityKey = memberActivityKeyRepository
 			.findByRecordKey(command.recordKey())
 			.orElseThrow();
-		if (!memberActivityKey.isOwnedBy(member)) {
+		if (!memberActivityKey.isOwnedBy(memberId)) {
 			throw new BusinessException(ActivityErrorCode.RECORD_KEY_FORBIDDEN);
 		}
 

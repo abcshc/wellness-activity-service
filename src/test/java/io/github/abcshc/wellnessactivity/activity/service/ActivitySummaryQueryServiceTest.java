@@ -29,8 +29,7 @@ class ActivitySummaryQueryServiceTest {
 
 	@Test
 	void 소유한_recordkey의_일별_요약을_조회한다() {
-		MemberEntity member = member("member@example.com");
-		MemberActivityKeyEntity activityKey = activityKey(member);
+		MemberActivityKeyEntity activityKey = activityKey(1L);
 		when(memberActivityKeyRepository.findByRecordKey("record-key-001")).thenReturn(Optional.of(activityKey));
 		when(activitySummaryService.summarizeDaily(
 			activityKey, LocalDate.of(2024, 11, 14), LocalDate.of(2024, 11, 15)
@@ -39,7 +38,7 @@ class ActivitySummaryQueryServiceTest {
 		)));
 
 		List<DailyActivitySummary> result = activitySummaryQueryService.daily(
-			member, "record-key-001", "2024-11-14", "2024-11-15"
+			1L, "record-key-001", "2024-11-14", "2024-11-15"
 		);
 
 		assertThat(result).hasSize(1);
@@ -50,12 +49,12 @@ class ActivitySummaryQueryServiceTest {
 
 	@Test
 	void 소유하지_않았거나_없는_recordkey는_동일한_403_오류를_반환한다() {
-		MemberEntity owner = member("owner@example.com");
+		MemberActivityKeyEntity ownedActivityKey = activityKey(1L);
 		when(memberActivityKeyRepository.findByRecordKey("record-key-001"))
-			.thenReturn(Optional.of(activityKey(owner)));
+			.thenReturn(Optional.of(ownedActivityKey));
 
 		assertThatThrownBy(() -> activitySummaryQueryService.daily(
-			member("other@example.com"), "record-key-001", "2024-11-14", "2024-11-15"
+			2L, "record-key-001", "2024-11-14", "2024-11-15"
 		))
 			.isInstanceOfSatisfying(BusinessException.class, exception ->
 				assertThat(exception.getErrorCode()).isEqualTo(ActivityErrorCode.RECORD_KEY_FORBIDDEN)
@@ -63,7 +62,7 @@ class ActivitySummaryQueryServiceTest {
 
 		when(memberActivityKeyRepository.findByRecordKey("missing-key")).thenReturn(Optional.empty());
 		assertThatThrownBy(() -> activitySummaryQueryService.daily(
-			owner, "missing-key", "2024-11-14", "2024-11-15"
+			1L, "missing-key", "2024-11-14", "2024-11-15"
 		))
 			.isInstanceOfSatisfying(BusinessException.class, exception ->
 				assertThat(exception.getErrorCode()).isEqualTo(ActivityErrorCode.RECORD_KEY_FORBIDDEN)
@@ -73,13 +72,13 @@ class ActivitySummaryQueryServiceTest {
 	@Test
 	void 잘못된_형식과_역전된_일별_범위는_400_오류를_반환한다() {
 		assertThatThrownBy(() -> activitySummaryQueryService.daily(
-			member("member@example.com"), "record-key-001", "2024/11/14", "2024-11-15"
+			1L, "record-key-001", "2024/11/14", "2024-11-15"
 		))
 			.isInstanceOfSatisfying(BusinessException.class, exception ->
 				assertThat(exception.getErrorCode()).isEqualTo(ActivityErrorCode.INVALID_DAILY_RANGE)
 			);
 		assertThatThrownBy(() -> activitySummaryQueryService.daily(
-			member("member@example.com"), "record-key-001", "2024-11-16", "2024-11-15"
+			1L, "record-key-001", "2024-11-16", "2024-11-15"
 		))
 			.isInstanceOfSatisfying(BusinessException.class, exception ->
 				assertThat(exception.getErrorCode()).isEqualTo(ActivityErrorCode.INVALID_DAILY_RANGE)
@@ -89,24 +88,22 @@ class ActivitySummaryQueryServiceTest {
 	@Test
 	void 일별은_366일_월별은_24개월을_초과해_조회할_수_없다() {
 		assertThatThrownBy(() -> activitySummaryQueryService.daily(
-			member("member@example.com"), "record-key-001", "2024-01-01", "2025-01-01"
+			1L, "record-key-001", "2024-01-01", "2025-01-01"
 		))
 			.isInstanceOfSatisfying(BusinessException.class, exception ->
 				assertThat(exception.getErrorCode()).isEqualTo(ActivityErrorCode.DAILY_RANGE_TOO_LARGE)
 			);
 		assertThatThrownBy(() -> activitySummaryQueryService.monthly(
-			member("member@example.com"), "record-key-001", "2024-01", "2026-01"
+			1L, "record-key-001", "2024-01", "2026-01"
 		))
 			.isInstanceOfSatisfying(BusinessException.class, exception ->
 				assertThat(exception.getErrorCode()).isEqualTo(ActivityErrorCode.MONTHLY_RANGE_TOO_LARGE)
 			);
 	}
 
-	private MemberEntity member(String email) {
-		return new MemberEntity("홍길동", "길동이", email, "password-hash");
-	}
-
-	private MemberActivityKeyEntity activityKey(MemberEntity member) {
+	private MemberActivityKeyEntity activityKey(Long memberId) {
+		MemberEntity member = Mockito.mock(MemberEntity.class);
+		when(member.getId()).thenReturn(memberId);
 		return new MemberActivityKeyEntity(member, "record-key-001");
 	}
 }

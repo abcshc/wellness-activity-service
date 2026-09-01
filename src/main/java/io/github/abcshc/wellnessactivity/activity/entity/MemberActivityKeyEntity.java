@@ -51,10 +51,7 @@ public class MemberActivityKeyEntity {
 		return id;
 	}
 
-	public boolean isOwnedBy(MemberEntity member) {
-		if (this.member == member) {
-			return true;
-		}
-		return this.member.getId() != null && this.member.getId().equals(member.getId());
+	public boolean isOwnedBy(Long memberId) {
+		return memberId != null && memberId.equals(member.getId());
 	}
 }

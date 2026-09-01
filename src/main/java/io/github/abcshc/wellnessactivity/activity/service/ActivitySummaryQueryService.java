@@ -4,7 +4,6 @@ import io.github.abcshc.wellnessactivity.activity.entity.MemberActivityKeyEntity
 import io.github.abcshc.wellnessactivity.activity.error.ActivityErrorCode;
 import io.github.abcshc.wellnessactivity.activity.repository.MemberActivityKeyRepository;
 import io.github.abcshc.wellnessactivity.common.exception.BusinessException;
-import io.github.abcshc.wellnessactivity.member.entity.MemberEntity;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeParseException;
@@ -31,26 +30,26 @@ public class ActivitySummaryQueryService {
 		this.activitySummaryService = activitySummaryService;
 	}
 
-	public List<DailyActivitySummary> daily(MemberEntity member, String recordKey, String from, String to) {
+	public List<DailyActivitySummary> daily(Long memberId, String recordKey, String from, String to) {
 		LocalDate startDate = parseDate(from);
 		LocalDate endDate = parseDate(to);
 		validateDailyRange(startDate, endDate);
-		return activitySummaryService.summarizeDaily(ownedActivityKey(member, recordKey), startDate, endDate);
+		return activitySummaryService.summarizeDaily(ownedActivityKey(memberId, recordKey), startDate, endDate);
 	}
 
-	public List<MonthlyActivitySummary> monthly(MemberEntity member, String recordKey, String from, String to) {
+	public List<MonthlyActivitySummary> monthly(Long memberId, String recordKey, String from, String to) {
 		YearMonth startMonth = parseYearMonth(from);
 		YearMonth endMonth = parseYearMonth(to);
 		validateMonthlyRange(startMonth, endMonth);
-		return activitySummaryService.summarizeMonthly(ownedActivityKey(member, recordKey), startMonth, endMonth);
+		return activitySummaryService.summarizeMonthly(ownedActivityKey(memberId, recordKey), startMonth, endMonth);
 	}
 
-	private MemberActivityKeyEntity ownedActivityKey(MemberEntity member, String recordKey) {
+	private MemberActivityKeyEntity ownedActivityKey(Long memberId, String recordKey) {
 		if (recordKey == null || recordKey.isBlank()) {
 			throw new BusinessException(ActivityErrorCode.INVALID_RECORD_KEY);
 		}
 		return memberActivityKeyRepository.findByRecordKey(recordKey)
-			.filter(activityKey -> activityKey.isOwnedBy(member))
+			.filter(activityKey -> activityKey.isOwnedBy(memberId))
 			.orElseThrow(() -> new BusinessException(ActivityErrorCode.RECORD_KEY_FORBIDDEN));
 	}
 

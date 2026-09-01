@@ -51,8 +51,8 @@ class ActivityUploadServiceIntegrationTest {
 	void 동일_이벤트를_재전송해도_원본은_한번만_저장한다() {
 		MemberEntity member = savedMember();
 
-		ActivityUploadResult first = activityUploadService.upload(member, normalizedInput());
-		ActivityUploadResult retry = activityUploadService.upload(member, normalizedInput());
+		ActivityUploadResult first = activityUploadService.upload(member.getId(), normalizedInput());
+		ActivityUploadResult retry = activityUploadService.upload(member.getId(), normalizedInput());
 
 		assertThat(first.createdCount()).isEqualTo(1);
 		assertThat(retry.createdCount()).isZero();
@@ -96,7 +96,7 @@ class ActivityUploadServiceIntegrationTest {
 		return () -> {
 			ready.countDown();
 			start.await(5, TimeUnit.SECONDS);
-			return activityUploadService.upload(member, normalizedInput());
+			return activityUploadService.upload(member.getId(), normalizedInput());
 		};
 	}
 
