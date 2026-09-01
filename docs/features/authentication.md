@@ -16,7 +16,7 @@
 - 이메일·비밀번호 로그인과 Access Token·Refresh Token 발급
 - Refresh Token의 해시 저장, 회전, 로그아웃
 
-건강활동 API는 아직 구현하지 않았습니다.
+건강활동 업로드·조회 API는 Bearer JWT 인증이 필요한 보호 경로로 구현했습니다.
 
 ## 접근 정책
 

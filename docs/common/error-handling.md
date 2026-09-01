@@ -13,6 +13,7 @@
 - 회원가입의 이메일 중복은 `MEMBER_EMAIL_ALREADY_EXISTS` 오류 코드로 처리합니다.
 - 전역 예외 처리기는 비즈니스 오류를 정의된 HTTP 상태와 공통 오류 응답으로 변환합니다.
 - Bean Validation 오류는 `400 Bad Request` 및 필드별 오류 목록으로 변환합니다.
+- JSON 본문을 해석할 수 없는 요청은 `400 Bad Request`로 변환합니다.
 - 예상하지 못한 예외는 내부 원인을 숨긴 `INTERNAL_SERVER_ERROR` 응답으로 변환합니다.
 
 ## 오류 응답 형식
@@ -44,5 +45,8 @@ MockMvc 계약 테스트로 비즈니스 오류, 입력값 오류, 예상하지 
 | `MEMBER_EMAIL_ALREADY_EXISTS` | `409 Conflict` | 이미 가입된 이메일입니다. |
 | `AUTH_INVALID_CREDENTIALS` | `401 Unauthorized` | 이메일 또는 비밀번호가 올바르지 않습니다. |
 | `AUTH_INVALID_REFRESH_TOKEN` | `401 Unauthorized` | 유효하지 않은 Refresh Token입니다. |
+| `ACTIVITY_RECORD_KEY_FORBIDDEN` | `403 Forbidden` | 조회·사용 권한이 없는 활동 키입니다. |
+| `ACTIVITY_INVALID_DAILY_RANGE` | `400 Bad Request` | 일별 조회 기간이 올바르지 않습니다. |
+| `ACTIVITY_INVALID_MONTHLY_RANGE` | `400 Bad Request` | 월별 조회 기간이 올바르지 않습니다. |
 | `INVALID_REQUEST` | `400 Bad Request` | 요청값이 올바르지 않습니다. |
 | `INTERNAL_SERVER_ERROR` | `500 Internal Server Error` | 처리 중 알 수 없는 오류가 발생했습니다. |

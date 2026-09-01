@@ -21,3 +21,15 @@
 - Docker Desktop 또는 Testcontainers가 접근 가능한 Docker 호환 런타임
 
 처음 `integrationTest`를 실행하면 MySQL 이미지를 내려받기 때문에 단위 테스트보다 시간이 더 걸릴 수 있습니다.
+
+## 건강활동 전체 흐름
+
+`ActivityWorkflowIntegrationTest`는 Testcontainers MySQL에서 다음 공개 API 흐름을 검증합니다.
+
+1. 회원가입과 로그인으로 Access Token을 발급합니다.
+2. KST 자정 경계·0초 구간·시작 시각 충돌·잘못된 항목이 포함된 활동 데이터를 업로드합니다.
+3. 같은 입력을 재전송해 생성 없이 무시되는지 확인합니다.
+4. Daily·Monthly 결과가 독립적으로 계산한 기대값과 일치하는지 확인합니다.
+5. 다른 회원이 같은 `recordkey`를 조회하면 `403 Forbidden`인지 확인합니다.
+
+테스트는 시작과 종료 시 데이터베이스를 정리하므로 실행 순서에 의존하지 않습니다.

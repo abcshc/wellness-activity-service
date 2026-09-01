@@ -1,8 +1,8 @@
 # 현재 데이터 모델
 
-> 상태: 일부 구현
+> 상태: 구현 완료
 
-현재 회원·인증 토큰·걸음수 원본 이벤트를 위한 `members`, `refresh_tokens`, `member_activity_keys`, `step_records` 테이블을 구현했습니다. 일·월 집계 테이블은 원본 이벤트 직접 집계 방침에 따라 만들지 않습니다.
+회원·인증 토큰·걸음수 원본 이벤트를 위한 `members`, `refresh_tokens`, `member_activity_keys`, `step_records` 테이블을 구현했습니다. 일·월 집계 테이블은 원본 이벤트 직접 집계 방침에 따라 만들지 않습니다.
 
 ```mermaid
 erDiagram

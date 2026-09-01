@@ -121,11 +121,60 @@ Authorization: Bearer <access-token>
 
 Monthly 응답은 `date` 대신 `month`(`YYYY-MM`)를 사용하며, 나머지 필드는 동일합니다.
 
+## 자정 경계와 재업로드 예시
+
+이 예시는 활동 구간이 자정을 넘을 때 일별 값이 어떻게 나뉘는지, 같은 데이터를 다시 보내도 합계가 늘어나지 않는지를 보여줍니다. 실제 사용자 데이터 대신 테스트 전용 데이터를 사용합니다.
+
+`recordkey=record-key-001`에 다음 활동을 업로드합니다.
+
+| 활동 | 기간(KST) | 값 | 처리 방식 |
+| --- | --- | --- | --- |
+| A | 2024-11-14 23:30 ~ 2024-11-15 00:30 | 100 steps, 2km, 10kcal | 한 시간 중 날짜별로 30분씩이므로 두 날짜에 절반씩 나눕니다. |
+| B | 2024-11-15 00:00 ~ 00:00 | 12 steps, 0.12km, 1.2kcal | 기간이 0초이므로 시작 날짜인 15일에 전부 넣습니다. |
+| C | 2024-11-14 23:30 ~ 23:40 | 20 steps, 0.2km, 1kcal | A와 시작 시각은 같지만 종료 시각이 달라 별도의 활동으로 저장합니다. |
+| 잘못된 항목 | 종료 시각이 시작 시각보다 이릅니다 | - | 이 항목만 저장하지 않고, 나머지 활동은 정상 처리합니다. |
+
+Daily 조회 결과는 다음과 같습니다.
+
+| 날짜(KST) | steps | distanceKm | caloriesKcal |
+| --- | ---: | ---: | ---: |
+| 2024-11-14 | 70 | 1.2 | 6 |
+| 2024-11-15 | 62 | 1.12 | 6.2 |
+
+예를 들어 14일의 `70 steps`는 A의 절반인 50과 C의 20을 더한 값입니다. 15일의 `62 steps`는 A의 나머지 50과 B의 12를 더한 값입니다.
+
+두 날짜를 합친 2024년 11월 Monthly 결과는 `steps=132`, `distanceKm=2.32`, `caloriesKcal=12.2`입니다. 동일 JSON을 다시 업로드하면 이미 저장된 세 활동은 무시되므로 Daily·Monthly 결과가 변하지 않습니다.
+
+이 동작은 [건강활동 전체 흐름 통합 테스트](../../src/integrationTest/java/io/github/abcshc/wellnessactivity/activity/ActivityWorkflowIntegrationTest.java)에서 검증합니다.
+
 ## 업로드 결과 계약
 
 ### `POST /api/v1/activities/steps`
 
 `Authorization: Bearer <access-token>`이 필요합니다. 인증 회원은 요청 본문이 아니라 Access Token의 주체로 결정됩니다.
+
+```http
+POST /api/v1/activities/steps
+Authorization: Bearer <access-token>
+Content-Type: application/json
+```
+
+```json
+{
+  "recordkey": "record-key-001",
+  "data": {
+    "source": {"name": "SamsungHealth"},
+    "entries": [
+      {
+        "period": {"from": "2024-11-14T23:30:00+0900", "to": "2024-11-15T00:30:00+0900"},
+        "steps": 100,
+        "distance": {"unit": "km", "value": 2},
+        "calories": {"unit": "kcal", "value": 10}
+      }
+    ]
+  }
+}
+```
 
 최상위 값이 유효한 업로드는 `200 OK`로 처리하고, 항목별 처리 결과를 함께 반환합니다.
 

@@ -14,10 +14,11 @@
 - 공통 오류 응답
 - JWT Bearer Token 인증
 - 이메일·비밀번호 로그인, Refresh Token 회전, 로그아웃
+- 활동 데이터 업로드와 항목별 부분 성공 응답
+- `recordkey` 소유권 확인과 원본 이벤트 멱등 저장
+- KST 기준 Daily·Monthly 활동 요약 조회
 
-건강활동 데이터 수집·조회 기능은 아직 구현하지 않았습니다.
-
-구현 전 확정한 활동 데이터의 기능 범위와 입력 정규화 기준은 [건강활동 데이터 기능 명세](docs/features/activity-data.md)에서 확인할 수 있습니다.
+활동 데이터의 입력 정규화, 시간대·집계 기준, API 계약은 [건강활동 데이터 기능 명세](docs/features/activity-data.md)에서 확인할 수 있습니다.
 
 ## 기술 방향
 
@@ -42,6 +43,13 @@ export APP_SECURITY_JWT_SECRET="$(openssl rand -base64 32)"
 ```bash
 docker compose up -d mysql
 ./gradlew bootRun
+```
+
+애플리케이션과 분리해 Flyway 마이그레이션만 먼저 적용하려면 다음 명령을 사용합니다. 이후 애플리케이션은 `SPRING_FLYWAY_ENABLED=false`로 실행할 수 있습니다.
+
+```bash
+docker compose --profile migration run --rm migration
+SPRING_FLYWAY_ENABLED=false ./gradlew bootRun
 ```
 
 컨테이너는 다음 명령으로 중지합니다. 데이터까지 초기화하려면 `-v` 옵션을 추가합니다.
