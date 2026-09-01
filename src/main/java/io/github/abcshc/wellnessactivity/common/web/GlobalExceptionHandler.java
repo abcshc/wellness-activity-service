@@ -9,6 +9,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -36,6 +37,14 @@ public class GlobalExceptionHandler {
 			.toList();
 
 		return toResponse(CommonErrorCode.INVALID_REQUEST, request, fieldErrors);
+	}
+
+	@ExceptionHandler(HttpMessageNotReadableException.class)
+	public ResponseEntity<ErrorResponse> handleHttpMessageNotReadableException(
+		HttpMessageNotReadableException exception,
+		HttpServletRequest request
+	) {
+		return toResponse(CommonErrorCode.INVALID_REQUEST, request);
 	}
 
 	@ExceptionHandler(Exception.class)
