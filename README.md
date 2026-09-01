@@ -20,6 +20,8 @@
 
 활동 데이터의 입력 정규화, 시간대·집계 기준, API 계약은 [건강활동 데이터 기능 명세](docs/features/activity-data.md)에서 확인할 수 있습니다.
 
+비식별 검증 입력을 실제 API로 처리한 1차 결과는 [건강활동 입력 검증 결과](docs/submission/activity-results.md)에서 확인할 수 있습니다. 이 결과는 원본 저장·재전송 멱등성·Daily·Monthly 집계 정합성을 포함하며, 동시성·부하 검증은 별도 단계에서 진행합니다.
+
 ## 기술 방향
 
 - Java 17
