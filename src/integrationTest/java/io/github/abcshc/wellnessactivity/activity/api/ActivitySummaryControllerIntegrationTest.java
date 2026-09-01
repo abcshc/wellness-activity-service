@@ -136,6 +136,18 @@ class ActivitySummaryControllerIntegrationTest {
 			.andExpect(jsonPath("$.code").value("UNAUTHENTICATED"));
 	}
 
+	@Test
+	void 존재하지_않는_회원의_유효_JWT로_조회하면_401_오류를_반환한다() throws Exception {
+		mockMvc.perform(get("/api/v1/activities/steps/daily")
+				.header(HttpHeaders.AUTHORIZATION, "Bearer " + jwtTokenIssuer.issue(999L).value())
+				.param("recordkey", "record-key-001")
+				.param("from", "2024-11-15")
+				.param("to", "2024-11-15"))
+			.andExpect(status().isUnauthorized())
+			.andExpect(jsonPath("$.code").value("UNAUTHENTICATED"))
+			.andExpect(jsonPath("$.path").value("/api/v1/activities/steps/daily"));
+	}
+
 	private MemberEntity savedMember(String email) {
 		return memberRepository.saveAndFlush(new MemberEntity("홍길동", "길동이", email, "password-hash"));
 	}

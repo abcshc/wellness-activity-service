@@ -33,3 +33,7 @@
 5. 다른 회원이 같은 `recordkey`를 조회하면 `403 Forbidden`인지 확인합니다.
 
 테스트는 시작과 종료 시 데이터베이스를 정리하므로 실행 순서에 의존하지 않습니다.
+
+## 인증 회원 상태 회귀 검증
+
+`ActivitySummaryControllerIntegrationTest`는 보호 활동 조회에서 인증 경계를 함께 확인합니다. Access Token이 유효하더라도 토큰 주체인 회원이 존재하지 않으면 `401 Unauthorized`를 반환하며, 다른 회원의 `recordkey`는 `403 Forbidden`을 반환합니다. 두 경우를 분리해 검증해 토큰 유효성과 활동 데이터 소유권의 의미가 섞이지 않도록 합니다.
