@@ -85,4 +85,24 @@ public class StepRecordEntity {
 		this.calories = calories;
 	}
 
+	public Instant getStartedAtUtc() {
+		return startedAtUtc;
+	}
+
+	public Instant getEndedAtUtc() {
+		return endedAtUtc;
+	}
+
+	public BigDecimal getSteps() {
+		return steps;
+	}
+
+	public BigDecimal getDistance() {
+		return distance;
+	}
+
+	public BigDecimal getCalories() {
+		return calories;
+	}
+
 }

@@ -90,6 +90,22 @@ class StepRecordRepositoryTest {
 		assertThat(stepRecordRepository.count()).isEqualTo(2);
 	}
 
+	@Test
+	void 기간과_겹치는_활동과_0초_활동만_조회한다() {
+		MemberActivityKeyEntity memberActivityKey = savedMemberActivityKey();
+		Instant startInclusive = Instant.parse("2024-11-14T15:00:00Z");
+		Instant endExclusive = Instant.parse("2024-11-15T15:00:00Z");
+		stepRecordRepository.saveAndFlush(stepRecord(
+			memberActivityKey,
+			Instant.parse("2024-11-14T14:30:00Z"),
+			Instant.parse("2024-11-14T15:30:00Z")
+		));
+		stepRecordRepository.saveAndFlush(stepRecord(memberActivityKey, startInclusive, startInclusive));
+		stepRecordRepository.saveAndFlush(stepRecord(memberActivityKey, endExclusive, endExclusive));
+
+		assertThat(stepRecordRepository.findOverlapping(memberActivityKey, startInclusive, endExclusive)).hasSize(2);
+	}
+
 	private MemberActivityKeyEntity savedMemberActivityKey() {
 		return memberActivityKeyRepository.saveAndFlush(new MemberActivityKeyEntity(savedMember(), "record-key-001"));
 	}
