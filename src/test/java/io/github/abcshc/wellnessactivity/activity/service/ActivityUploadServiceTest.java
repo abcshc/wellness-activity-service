@@ -12,40 +12,40 @@ import io.github.abcshc.wellnessactivity.activity.entity.ActivityProvider;
 import io.github.abcshc.wellnessactivity.activity.entity.MemberActivityKeyEntity;
 import io.github.abcshc.wellnessactivity.activity.error.ActivityErrorCode;
 import io.github.abcshc.wellnessactivity.activity.repository.MemberActivityKeyRepository;
-import io.github.abcshc.wellnessactivity.activity.repository.StepRecordRepository;
+import io.github.abcshc.wellnessactivity.activity.repository.StepRecordBatchInsert;
+import io.github.abcshc.wellnessactivity.activity.repository.StepRecordBatchRepository;
 import io.github.abcshc.wellnessactivity.common.exception.BusinessException;
 import io.github.abcshc.wellnessactivity.member.entity.MemberEntity;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 
 class ActivityUploadServiceTest {
 
 	private final MemberActivityKeyRepository memberActivityKeyRepository = Mockito.mock(MemberActivityKeyRepository.class);
-	private final StepRecordRepository stepRecordRepository = Mockito.mock(StepRecordRepository.class);
+	private final StepRecordBatchRepository stepRecordBatchRepository = Mockito.mock(StepRecordBatchRepository.class);
 	private final ActivityUploadService activityUploadService = new ActivityUploadService(
 		memberActivityKeyRepository,
-		stepRecordRepository
+		stepRecordBatchRepository
 	);
 
 	@Test
-	void 유효_항목을_저장하고_같은_요청의_재전송은_한번만_보존한다() {
+	void 유효_항목을_저장하고_같은_요청의_중복_항목은_한번만_보존한다() {
 		MemberActivityKeyEntity activityKey = activityKey(1L);
 		when(memberActivityKeyRepository.findByRecordKey("record-key-001")).thenReturn(Optional.of(activityKey));
-		when(stepRecordRepository.insertIgnore(
-			any(), any(), any(), any(), any(), any(), any(), any(), any()
-		)).thenReturn(1, 0);
+		when(stepRecordBatchRepository.insertIgnore(any(), any(), any())).thenReturn(1);
 
 		ActivityUploadResult result = activityUploadService.upload(1L, normalizedInput(
-			List.of(record("2024-11-15T00:00:00Z"), record("2024-11-15T00:00:00Z")),
+			List.of(recordAt(0), recordAt(0)),
 			List.of(new ActivityEntryValidationError(2, "steps", "ACTIVITY_INVALID_STEPS", "걸음 수가 올바르지 않습니다."))
 		));
 
-		verify(stepRecordRepository, times(2)).insertIgnore(any(), any(), any(), any(), any(), any(), any(), any(), any());
+		verify(stepRecordBatchRepository).insertIgnore(any(), any(), any());
 		verify(memberActivityKeyRepository).insertIgnore(1L, "record-key-001");
 		assertThat(result.totalCount()).isEqualTo(3);
 		assertThat(result.createdCount()).isEqualTo(1);
@@ -58,17 +58,29 @@ class ActivityUploadServiceTest {
 	void 이미_저장된_같은_활동은_원본을_유지하고_무시한다() {
 		MemberActivityKeyEntity activityKey = activityKey(1L);
 		when(memberActivityKeyRepository.findByRecordKey("record-key-001")).thenReturn(Optional.of(activityKey));
-		when(stepRecordRepository.insertIgnore(
-			any(), any(), any(), any(), any(), any(), any(), any(), any()
-		)).thenReturn(0);
+		when(stepRecordBatchRepository.insertIgnore(any(), any(), any())).thenReturn(0);
 
-		ActivityUploadResult result = activityUploadService.upload(1L, normalizedInput(
-			List.of(record("2024-11-15T00:00:00Z")),
-			List.of()
-		));
+		ActivityUploadResult result = activityUploadService.upload(1L, normalizedInput(List.of(recordAt(0)), List.of()));
 
 		assertThat(result.createdCount()).isZero();
 		assertThat(result.ignoredCount()).isEqualTo(1);
+	}
+
+	@Test
+	void 활동_201건은_200건과_1건의_청크로_나누어_저장한다() {
+		MemberActivityKeyEntity activityKey = activityKey(1L);
+		when(memberActivityKeyRepository.findByRecordKey("record-key-001")).thenReturn(Optional.of(activityKey));
+		when(stepRecordBatchRepository.insertIgnore(any(), any(), any())).thenReturn(200, 1);
+
+		ActivityUploadResult result = activityUploadService.upload(1L, normalizedInput(
+			IntStream.range(0, 201).mapToObj(this::recordAt).toList(),
+			List.of()
+		));
+
+		ArgumentCaptor<List<StepRecordBatchInsert>> inserts = listCaptor();
+		verify(stepRecordBatchRepository, times(2)).insertIgnore(any(), any(), inserts.capture());
+		assertThat(inserts.getAllValues()).extracting(List::size).containsExactly(200, 1);
+		assertThat(result.createdCount()).isEqualTo(201);
 	}
 
 	@Test
@@ -76,13 +88,11 @@ class ActivityUploadServiceTest {
 		MemberActivityKeyEntity activityKey = activityKey(1L);
 		when(memberActivityKeyRepository.findByRecordKey("record-key-001")).thenReturn(Optional.of(activityKey));
 
-		assertThatThrownBy(() -> activityUploadService.upload(2L, normalizedInput(
-			List.of(record("2024-11-15T00:00:00Z")), List.of()
-		)))
+		assertThatThrownBy(() -> activityUploadService.upload(2L, normalizedInput(List.of(recordAt(0)), List.of())))
 			.isInstanceOfSatisfying(BusinessException.class, exception ->
 				assertThat(exception.getErrorCode()).isEqualTo(ActivityErrorCode.RECORD_KEY_FORBIDDEN)
 			);
-		verify(stepRecordRepository, never()).insertIgnore(any(), any(), any(), any(), any(), any(), any(), any(), any());
+		verify(stepRecordBatchRepository, never()).insertIgnore(any(), any(), any());
 	}
 
 	@Test
@@ -94,7 +104,7 @@ class ActivityUploadServiceTest {
 
 		verify(memberActivityKeyRepository, never()).findByRecordKey(any());
 		verify(memberActivityKeyRepository, never()).insertIgnore(any(), any());
-		verify(stepRecordRepository, never()).insertIgnore(any(), any(), any(), any(), any(), any(), any(), any(), any());
+		verify(stepRecordBatchRepository, never()).insertIgnore(any(), any(), any());
 		assertThat(result.totalCount()).isEqualTo(1);
 		assertThat(result.invalidCount()).isEqualTo(1);
 	}
@@ -103,9 +113,7 @@ class ActivityUploadServiceTest {
 	void 원천_칼로리가_0인_새_활동은_추정값과_규칙_버전을_함께_저장한다() {
 		MemberActivityKeyEntity activityKey = activityKey(1L);
 		when(memberActivityKeyRepository.findByRecordKey("record-key-001")).thenReturn(Optional.of(activityKey));
-		when(stepRecordRepository.insertIgnore(
-			any(), any(), any(), any(), any(), any(), any(), any(), any()
-		)).thenReturn(1);
+		when(stepRecordBatchRepository.insertIgnore(any(), any(), any())).thenReturn(1);
 
 		activityUploadService.upload(1L, normalizedInput(List.of(new NormalizedStepRecordCommand(
 			Instant.parse("2024-11-15T00:00:00Z"),
@@ -113,13 +121,17 @@ class ActivityUploadServiceTest {
 			new BigDecimal("100"), new BigDecimal("0.08"), BigDecimal.ZERO
 		)), List.of()));
 
-		ArgumentCaptor<BigDecimal> estimatedCalories = ArgumentCaptor.forClass(BigDecimal.class);
-		ArgumentCaptor<String> estimateVersion = ArgumentCaptor.forClass(String.class);
-		verify(stepRecordRepository).insertIgnore(
-			any(), any(), any(), any(), any(), any(), any(), estimatedCalories.capture(), estimateVersion.capture()
-		);
-		assertThat(estimatedCalories.getValue()).isEqualByComparingTo("4");
-		assertThat(estimateVersion.getValue()).isEqualTo("STEP_COUNT_V1");
+		ArgumentCaptor<List<StepRecordBatchInsert>> inserts = listCaptor();
+		verify(stepRecordBatchRepository).insertIgnore(any(), any(), inserts.capture());
+		assertThat(inserts.getValue()).singleElement().satisfies(insert -> {
+			assertThat(insert.estimatedCaloriesKcal()).isEqualByComparingTo("4");
+			assertThat(insert.caloriesEstimateVersion()).isEqualTo("STEP_COUNT_V1");
+		});
+	}
+
+	@SuppressWarnings("unchecked")
+	private ArgumentCaptor<List<StepRecordBatchInsert>> listCaptor() {
+		return ArgumentCaptor.forClass(List.class);
 	}
 
 	private ActivityInputNormalizationResult normalizedInput(
@@ -132,8 +144,8 @@ class ActivityUploadServiceTest {
 		);
 	}
 
-	private NormalizedStepRecordCommand record(String startedAt) {
-		Instant startedAtUtc = Instant.parse(startedAt);
+	private NormalizedStepRecordCommand recordAt(int index) {
+		Instant startedAtUtc = Instant.parse("2024-11-15T00:00:00Z").plusSeconds(index * 600L);
 		return new NormalizedStepRecordCommand(
 			startedAtUtc,
 			startedAtUtc.plusSeconds(600),

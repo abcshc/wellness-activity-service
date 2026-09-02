@@ -3,8 +3,11 @@ package io.github.abcshc.wellnessactivity.activity.service;
 import io.github.abcshc.wellnessactivity.activity.entity.MemberActivityKeyEntity;
 import io.github.abcshc.wellnessactivity.activity.error.ActivityErrorCode;
 import io.github.abcshc.wellnessactivity.activity.repository.MemberActivityKeyRepository;
-import io.github.abcshc.wellnessactivity.activity.repository.StepRecordRepository;
+import io.github.abcshc.wellnessactivity.activity.repository.StepRecordBatchInsert;
+import io.github.abcshc.wellnessactivity.activity.repository.StepRecordBatchRepository;
 import io.github.abcshc.wellnessactivity.common.exception.BusinessException;
+import java.util.ArrayList;
+import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,16 +15,17 @@ import org.springframework.transaction.annotation.Transactional;
 public class ActivityUploadService {
 
 	private static final StepCaloriesEstimator STEP_CALORIES_ESTIMATOR = new StepCaloriesEstimator();
+	private static final int STEP_RECORD_BATCH_SIZE = 200;
 
 	private final MemberActivityKeyRepository memberActivityKeyRepository;
-	private final StepRecordRepository stepRecordRepository;
+	private final StepRecordBatchRepository stepRecordBatchRepository;
 
 	public ActivityUploadService(
 		MemberActivityKeyRepository memberActivityKeyRepository,
-		StepRecordRepository stepRecordRepository
+		StepRecordBatchRepository stepRecordBatchRepository
 	) {
 		this.memberActivityKeyRepository = memberActivityKeyRepository;
-		this.stepRecordRepository = stepRecordRepository;
+		this.stepRecordBatchRepository = stepRecordBatchRepository;
 	}
 
 	@Transactional
@@ -44,21 +48,12 @@ public class ActivityUploadService {
 			throw new BusinessException(ActivityErrorCode.RECORD_KEY_FORBIDDEN);
 		}
 
+		List<StepRecordBatchInsert> inserts = toBatchInserts(command.records());
 		int createdCount = 0;
-		for (NormalizedStepRecordCommand record : command.records()) {
-			StepCaloriesEstimator.StepCaloriesEstimate estimatedCalories = STEP_CALORIES_ESTIMATOR.estimate(
-				record.steps(), record.caloriesKcal()
-			);
-			createdCount += stepRecordRepository.insertIgnore(
-				memberActivityKey.getId(),
-				command.provider().name(),
-				record.startedAtUtc(),
-				record.endedAtUtc(),
-				record.steps(),
-				record.distanceKm(),
-				record.caloriesKcal(),
-				estimatedCalories.caloriesKcal(),
-				estimatedCalories.version()
+		for (int startIndex = 0; startIndex < inserts.size(); startIndex += STEP_RECORD_BATCH_SIZE) {
+			int endIndex = Math.min(startIndex + STEP_RECORD_BATCH_SIZE, inserts.size());
+			createdCount += stepRecordBatchRepository.insertIgnore(
+				memberActivityKey.getId(), command.provider(), inserts.subList(startIndex, endIndex)
 			);
 		}
 
@@ -69,5 +64,24 @@ public class ActivityUploadService {
 			normalizationResult.invalidEntries().size(),
 			normalizationResult.invalidEntries()
 		);
+	}
+
+	private List<StepRecordBatchInsert> toBatchInserts(List<NormalizedStepRecordCommand> records) {
+		List<StepRecordBatchInsert> inserts = new ArrayList<>(records.size());
+		for (NormalizedStepRecordCommand record : records) {
+			StepCaloriesEstimator.StepCaloriesEstimate estimatedCalories = STEP_CALORIES_ESTIMATOR.estimate(
+				record.steps(), record.caloriesKcal()
+			);
+			inserts.add(new StepRecordBatchInsert(
+				record.startedAtUtc(),
+				record.endedAtUtc(),
+				record.steps(),
+				record.distanceKm(),
+				record.caloriesKcal(),
+				estimatedCalories.caloriesKcal(),
+				estimatedCalories.version()
+			));
+		}
+		return inserts;
 	}
 }
