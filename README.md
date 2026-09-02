@@ -20,7 +20,7 @@
 
 활동 데이터의 입력 정규화, 시간대·집계 기준, API 계약은 [건강활동 데이터 기능 명세](docs/features/activity-data.md)에서 확인할 수 있습니다.
 
-비식별 검증 입력을 실제 API로 처리한 1차 결과는 [건강활동 입력 검증 결과](docs/submission/activity-results.md)에서 확인할 수 있습니다. 이 결과는 원본 저장·재전송 멱등성·Daily·Monthly 집계 정합성을 포함하며, 동시성·부하 검증은 별도 단계에서 진행합니다.
+비식별 검증 입력을 실제 API로 처리한 1차 결과는 [건강활동 입력 검증 결과](docs/submission/activity-results.md)에서 확인할 수 있습니다. 이 결과는 원본 저장·재전송 멱등성·Daily·Monthly 집계 정합성을 포함합니다. 요청 크기와 동시성 검증은 [건강활동 업로드 부하 탐색 결과](docs/submission/load-test-results.md)에서 확인할 수 있습니다.
 
 ## 기술 방향
 
@@ -85,3 +85,4 @@ Docker가 실행 중인 환경에서는 Testcontainers 기반 MySQL 통합 테�
 - [현재 데이터 모델](docs/data-model.md)
 - [데이터베이스 마이그레이션](docs/database-migration.md)
 - [테스트 전략](docs/testing.md)
+- [건강활동 업로드 부하 탐색 결과](docs/submission/load-test-results.md)

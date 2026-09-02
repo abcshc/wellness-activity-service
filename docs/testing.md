@@ -1,5 +1,14 @@
 # 테스트 전략
 
+## 검증 흐름
+
+건강활동 기능은 작은 규칙부터 실제 MySQL 저장까지, 범위를 조금씩 넓혀가며 확인합니다. 아래 순서를 보면 각 테스트가 무엇을 책임지는지 쉽게 알 수 있습니다.
+
+1. 단위 테스트로 입력 정규화, 수치 처리, 자정 경계 집계 규칙을 검증한다.
+2. Testcontainers MySQL 통합 테스트로 유니크 제약조건, 멱등 저장, 인증·권한을 검증한다.
+3. 실제 API 전체 흐름에서 원본 입력 저장, 재전송, Daily·Monthly 집계 결과를 검증한다.
+4. 요청 크기와 동시 업로드의 탐색 결과를 [건강활동 업로드 부하 탐색 결과](submission/load-test-results.md)에 기록한다.
+
 ## 테스트 계층
 
 | 계층 | 목적 | 실행 명령 |
@@ -8,6 +17,23 @@
 | MySQL 통합 테스트 | Spring 컨텍스트, JPA 매핑, MockMvc API 계약, Flyway 마이그레이션을 실제 MySQL에서 확인 | `./gradlew integrationTest` |
 
 기본 `test` 작업은 `src/test`의 단위 테스트만 실행합니다. `integrationTest` 작업은 `src/integrationTest`의 테스트를 실행하며, Testcontainers가 `mysql:8.4.8` 컨테이너를 시작하고 종료합니다. `build` 작업은 두 테스트 계층을 모두 실행합니다.
+
+## 요청 크기별 활동 업로드 검증
+
+`ActivityUploadRequestSizeIntegrationTest`는 “한 번에 큰 요청이 와도 정확히 저장되는가?”를 확인합니다. 실제 MySQL에서 100·500·1,000개 항목을 각각 업로드하고, SamsungHealth·Health Kit·HealthConnect의 시간 표현도 함께 확인합니다. 응답의 `createdCount`와 실제 저장 행 수가 요청 항목 수와 같아야 통과합니다.
+
+### 이 테스트가 실행되는 방식
+
+이 테스트는 한 테스트 메서드가 세 입력 크기를 **차례대로** 실행하는 파라미터화 테스트입니다. 여러 사용자가 동시에 접속하는 상황이나 초당 처리량을 재는 테스트는 아닙니다. 대신 큰 요청도 현재 API 계약대로 정확히 저장되는지를 확인합니다.
+
+`MySqlTestContainerConfiguration`은 테스트 자체가 아니라, 통합 테스트가 사용할 MySQL 실행 환경을 마련해 주는 공용 설정입니다. 각 통합 테스트가 이 설정을 `@Import`하면 다음 순서로 동작합니다.
+
+1. Testcontainers가 Docker에서 `mysql:8.4.8` 컨테이너를 시작한다.
+2. `@ServiceConnection`이 컨테이너의 접속 정보를 Spring Boot DataSource에 연결한다.
+3. Flyway가 실제 MySQL에 마이그레이션을 적용하고, Hibernate가 매핑을 검증한다.
+4. `MockMvc`가 같은 JVM의 컨트롤러를 호출하고, 저장 결과를 실제 MySQL에서 확인한다.
+
+즉, 이 테스트는 “애플리케이션과 실제 MySQL이 함께 잘 동작하는가?”를 확인하는 통합 테스트입니다. 다만 외부 HTTP 서버에 요청을 보내거나, 여러 사용자를 동시에 만드는 부하 테스트는 아닙니다.
 
 ## MySQL 제약조건 검증
 
