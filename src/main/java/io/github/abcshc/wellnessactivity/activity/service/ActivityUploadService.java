@@ -11,6 +11,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class ActivityUploadService {
 
+	private static final StepCaloriesEstimator STEP_CALORIES_ESTIMATOR = new StepCaloriesEstimator();
+
 	private final MemberActivityKeyRepository memberActivityKeyRepository;
 	private final StepRecordRepository stepRecordRepository;
 
@@ -44,6 +46,9 @@ public class ActivityUploadService {
 
 		int createdCount = 0;
 		for (NormalizedStepRecordCommand record : command.records()) {
+			StepCaloriesEstimator.StepCaloriesEstimate estimatedCalories = STEP_CALORIES_ESTIMATOR.estimate(
+				record.steps(), record.caloriesKcal()
+			);
 			createdCount += stepRecordRepository.insertIgnore(
 				memberActivityKey.getId(),
 				command.provider().name(),
@@ -51,7 +56,9 @@ public class ActivityUploadService {
 				record.endedAtUtc(),
 				record.steps(),
 				record.distanceKm(),
-				record.caloriesKcal()
+				record.caloriesKcal(),
+				estimatedCalories.caloriesKcal(),
+				estimatedCalories.version()
 			);
 		}
 

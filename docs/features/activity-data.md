@@ -42,13 +42,22 @@
 
 일별·월별 집계 서비스는 원본 활동 이벤트를 직접 합산해 계산합니다. 현재 예상 데이터량에서는 일별 집계 결과를 별도 테이블에 저장하거나 Redis 캐시를 유지하지 않습니다.
 
-`steps`, `distance`, `calories` 원본값은 변형하지 않고 보존합니다. 칼로리의 사용자 제공 집계값은 원천값과 구분해 관리합니다. 원천이 직접 제공한 활동 에너지 값이 있으면 이를 우선 사용하고, 값이 없을 때만 명시적인 추정 정책으로 계산합니다. 추정치는 원천값을 덮어쓰지 않으며, 계산 규칙의 출처와 버전을 함께 관리합니다.
+`steps`, `distance`, `calories` 원본값은 변형하지 않고 보존합니다. 칼로리의 사용자 제공 집계값은 원천값과 구분해 관리하며, 추정값이 원천값을 덮어쓰지 않습니다.
 
-현재 과제 입력은 `calories` 하나만 제공하고, 사용자 신체 정보나 추정 공식도 정의하지 않습니다. 따라서 제공 JSON의 Daily·Monthly 결과는 원천 `calories`의 합계를 사용합니다. 실제 HealthKit 연동에서는 `activeEnergyBurned`를 별도로 수집하는 것을 우선하며, 그마저 없는 경우의 추정은 별도 제품 정책으로 추가합니다.
+### 활동 칼로리 fallback
 
-### 현재 확인된 한계
+원천 `calories`가 양수인 활동은 원천값만 사용합니다. 원천값이 `0`이고 걸음 수가 양수인 일상 걸음 활동은 사용자에게 참고용 활동량을 제공하기 위해 다음 단순 fallback을 적용합니다.
 
-검증 입력의 Health Kit 데이터는 `calories`가 모두 `0`입니다. 현재 구현은 원본값을 변형하지 않으므로 해당 입력의 Daily·Monthly 칼로리도 `0`으로 반환합니다. 저장·집계 규칙은 일관되지만, 이 값만으로는 사용자에게 의미 있는 칼로리 지표를 제공할 수 없습니다. 이 문제의 해결 정책과 구현은 아직 확정하지 않았습니다.
+```text
+estimatedCaloriesKcal = steps × 0.04
+caloriesKcal = sourceCaloriesKcal + estimatedCaloriesKcal
+```
+
+원본 `calories`는 `calories_kcal`, fallback 값은 `estimated_calories_kcal`, 적용 규칙은 `calories_estimate_version`으로 원본 이벤트에 함께 저장합니다. API는 내부 구성값을 노출하지 않고 두 값을 합산한 `caloriesKcal`만 반환합니다.
+
+`0.04 kcal/걸음`은 개인별 에너지 소비량이 아닌 보수적인 단일 참고 계수입니다. 통근 보행 연구에서 휴식 에너지를 제외한 걸음당 에너지는 여성 약 `0.0394 kcal`, 남성 약 `0.0532 kcal`로 보고되었습니다. 제공된 SamsungHealth 검증 입력을 원천값으로 역산한 결과도 약 `0.0353`~`0.0401 kcal/걸음`입니다. [통근 보행 연구](https://pmc.ncbi.nlm.nih.gov/articles/PMC9635924/)
+
+현재 입력은 일반 활동의 걸음 수를 10분 단위로 집계한 데이터이므로, 체중·실제 연속 보행 시간·속도·경사 같은 복잡한 조건은 fallback에 포함하지 않습니다. 따라서 계단·등산·달리기·운동 세션을 구분하거나, 의료·영양 처방 또는 개인별 정확한 에너지 소비량을 산출하는 기능으로 사용하지 않습니다. 실제 연동에서는 HealthKit의 [`activeEnergyBurned`](https://developer.apple.com/documentation/healthkit/hkquantitytypeidentifier/activeenergyburned)나 Health Connect의 [`ActiveCaloriesBurnedRecord`](https://developer.android.com/reference/androidx/health/connect/client/records/ActiveCaloriesBurnedRecord)처럼 원천이 제공하는 활동 에너지를 우선합니다.
 
 서버는 데이터 스트림과 UTC 시간 범위를 조건으로 사용하므로, 날짜별·월별 조회에서 활동 시각 열에 시간대 변환 함수를 적용하지 않습니다. 실제 조회량에서 병목이 확인될 때만 파생 집계 또는 캐시를 검토합니다.
 
@@ -102,6 +111,7 @@ UNIQUE (member_activity_key_id, provider, started_at_utc, ended_at_utc)
 - `recordkey`, `from`, `to`는 모두 필수이며, Daily는 최대 366일, Monthly는 최대 24개월까지 조회할 수 있습니다.
 - 요청 범위의 모든 날짜·월을 순서대로 반환하며, 활동이 없는 항목의 `steps`, `calories`, `distance`는 `0`입니다.
 - 각 결과에는 조회 기준인 `recordkey`를 포함합니다.
+- `caloriesKcal`은 원천값과 저장된 추정값을 합산한 사용자 표시용 활동 칼로리입니다. 원천·추정 구성값과 적용 규칙 버전은 데이터베이스에만 보관합니다.
 - 존재하지 않거나 인증 회원이 소유하지 않은 `recordkey`는 같은 `403 Forbidden` 오류로 처리합니다.
 
 ### Daily 예시
@@ -121,6 +131,14 @@ Authorization: Bearer <access-token>
     "caloriesKcal": 0
   }
 ]
+```
+
+원천 칼로리가 `0`인 100걸음의 응답은 다음과 같습니다.
+
+```json
+{
+  "caloriesKcal": 4
+}
 ```
 
 Monthly 응답은 `date` 대신 `month`(`YYYY-MM`)를 사용하며, 나머지 필드는 동일합니다.

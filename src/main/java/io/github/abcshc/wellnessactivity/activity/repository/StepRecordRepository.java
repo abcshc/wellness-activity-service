@@ -32,10 +32,12 @@ public interface StepRecordRepository extends JpaRepository<StepRecordEntity, Lo
 	@Modifying
 	@Query(value = """
 		insert ignore into step_records (
-			member_activity_key_id, provider, started_at_utc, ended_at_utc, steps, distance_km, calories_kcal
+			member_activity_key_id, provider, started_at_utc, ended_at_utc, steps, distance_km, calories_kcal,
+			estimated_calories_kcal, calories_estimate_version
 		)
 		values (
-			:memberActivityKeyId, :provider, :startedAtUtc, :endedAtUtc, :steps, :distanceKm, :caloriesKcal
+			:memberActivityKeyId, :provider, :startedAtUtc, :endedAtUtc, :steps, :distanceKm, :caloriesKcal,
+			:estimatedCaloriesKcal, :caloriesEstimateVersion
 		)
 		""", nativeQuery = true)
 	int insertIgnore(
@@ -45,6 +47,8 @@ public interface StepRecordRepository extends JpaRepository<StepRecordEntity, Lo
 		@Param("endedAtUtc") Instant endedAtUtc,
 		@Param("steps") BigDecimal steps,
 		@Param("distanceKm") BigDecimal distanceKm,
-		@Param("caloriesKcal") BigDecimal caloriesKcal
+		@Param("caloriesKcal") BigDecimal caloriesKcal,
+		@Param("estimatedCaloriesKcal") BigDecimal estimatedCaloriesKcal,
+		@Param("caloriesEstimateVersion") String caloriesEstimateVersion
 	);
 }

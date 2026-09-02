@@ -61,6 +61,18 @@ class ActivityUploadServiceIntegrationTest {
 	}
 
 	@Test
+	void 원천_칼로리가_0인_활동은_원천값과_추정값을_분리해_저장한다() {
+		MemberEntity member = savedMember();
+
+		activityUploadService.upload(member.getId(), normalizedInputWithZeroCalories());
+
+		var record = stepRecordRepository.findAll().get(0);
+		assertThat(record.getCalories()).isEqualByComparingTo("0");
+		assertThat(record.getEstimatedCalories()).isEqualByComparingTo("4");
+		assertThat(record.getCaloriesEstimateVersion()).isEqualTo("STEP_COUNT_V1");
+	}
+
+	@Test
 	void 같은_recordkey의_동시_업로드는_단일_인스턴스에서_한번만_저장한다() throws Exception {
 		MemberEntity member = savedMember();
 		CountDownLatch ready = new CountDownLatch(2);
@@ -117,6 +129,21 @@ class ActivityUploadServiceIntegrationTest {
 					new BigDecimal("32"),
 					new BigDecimal("0.02422"),
 					new BigDecimal("1.21")
+				))
+			),
+			List.of()
+		);
+	}
+
+	private ActivityInputNormalizationResult normalizedInputWithZeroCalories() {
+		return new ActivityInputNormalizationResult(
+			new ActivityUploadCommand(
+				"record-key-001",
+				ActivityProvider.APPLE_HEALTH,
+				List.of(new NormalizedStepRecordCommand(
+					Instant.parse("2024-11-15T00:00:00Z"),
+					Instant.parse("2024-11-15T00:10:00Z"),
+					new BigDecimal("100"), new BigDecimal("0.08"), BigDecimal.ZERO
 				))
 			),
 			List.of()

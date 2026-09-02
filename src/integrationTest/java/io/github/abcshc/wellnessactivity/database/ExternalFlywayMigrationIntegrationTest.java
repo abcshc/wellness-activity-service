@@ -73,14 +73,28 @@ class ExternalFlywayMigrationIntegrationTest {
 				+ "and index_name = 'uk_step_records_key_provider_period' and non_unique = 0",
 			Integer.class
 		);
+		Integer estimatedCaloriesColumnCount = jdbcTemplate.queryForObject(
+			"select count(*) from information_schema.columns "
+				+ "where table_schema = database() and table_name = 'step_records' "
+				+ "and column_name = 'estimated_calories_kcal'",
+			Integer.class
+		);
+		Integer estimateVersionColumnCount = jdbcTemplate.queryForObject(
+			"select count(*) from information_schema.columns "
+				+ "where table_schema = database() and table_name = 'step_records' "
+				+ "and column_name = 'calories_estimate_version'",
+			Integer.class
+		);
 
-		assertThat(historyCount).isEqualTo(5);
+		assertThat(historyCount).isEqualTo(6);
 		assertThat(membersTableCount).isEqualTo(1);
 		assertThat(refreshTokensTableCount).isEqualTo(1);
 		assertThat(memberActivityKeysTableCount).isEqualTo(1);
 		assertThat(stepRecordsTableCount).isEqualTo(1);
 		assertThat(recordKeyUniqueConstraintCount).isEqualTo(1);
 		assertThat(stepRecordUniqueConstraintCount).isEqualTo(4);
+		assertThat(estimatedCaloriesColumnCount).isEqualTo(1);
+		assertThat(estimateVersionColumnCount).isEqualTo(1);
 		assertThat(applicationContext.getBeansOfType(Flyway.class)).isEmpty();
 	}
 

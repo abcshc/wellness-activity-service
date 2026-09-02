@@ -55,6 +55,38 @@ class ActivitySummaryServiceTest {
 	}
 
 	@Test
+	void 저장된_추정_칼로리는_날짜_경계에_맞춰_나눈다() {
+		when(stepRecordRepository.findOverlapping(any(), any(), any())).thenReturn(List.of(
+			record("2024-11-14T14:30:00Z", "2024-11-14T15:30:00Z", "100", "2", "0", "4")
+		));
+
+		List<DailyActivitySummary> result = activitySummaryService.summarizeDaily(
+			activityKey(), LocalDate.of(2024, 11, 14), LocalDate.of(2024, 11, 15)
+		);
+
+		assertThat(result).containsExactly(
+			new DailyActivitySummary(LocalDate.of(2024, 11, 14), decimal("50"), decimal("1"), decimal("2")),
+			new DailyActivitySummary(LocalDate.of(2024, 11, 15), decimal("50"), decimal("1"), decimal("2"))
+		);
+	}
+
+	@Test
+	void 원천값과_저장된_추정값이_섞인_날짜는_최종_칼로리를_반환한다() {
+		when(stepRecordRepository.findOverlapping(any(), any(), any())).thenReturn(List.of(
+			record("2024-11-14T15:00:00Z", "2024-11-14T15:10:00Z", "100", "0.08", "5"),
+			record("2024-11-14T15:10:00Z", "2024-11-14T15:20:00Z", "50", "0.04", "0", "2")
+		));
+
+		List<DailyActivitySummary> result = activitySummaryService.summarizeDaily(
+			activityKey(), LocalDate.of(2024, 11, 15), LocalDate.of(2024, 11, 15)
+		);
+
+		assertThat(result).containsExactly(new DailyActivitySummary(
+			LocalDate.of(2024, 11, 15), decimal("150"), decimal("0.12"), decimal("7")
+		));
+	}
+
+	@Test
 	void 비례_배분의_소수점_잔여값은_마지막_기간에_반영한다() {
 		when(stepRecordRepository.findOverlapping(any(), any(), any())).thenReturn(List.of(
 			record("2024-11-14T14:40:00Z", "2024-11-14T15:40:00Z", "10", "1", "1")
@@ -132,6 +164,15 @@ class ActivitySummaryServiceTest {
 			decimal(steps),
 			decimal(distance),
 			decimal(calories)
+		);
+	}
+
+	private StepRecordEntity record(
+		String startedAt, String endedAt, String steps, String distance, String calories, String estimatedCalories
+	) {
+		return new StepRecordEntity(
+			activityKey(), ActivityProvider.SAMSUNG_HEALTH, Instant.parse(startedAt), Instant.parse(endedAt),
+			decimal(steps), decimal(distance), decimal(calories), decimal(estimatedCalories), "STEP_COUNT_V1"
 		);
 	}
 

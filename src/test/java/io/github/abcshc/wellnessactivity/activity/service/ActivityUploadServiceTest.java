@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.mockito.ArgumentCaptor;
 
 class ActivityUploadServiceTest {
 
@@ -36,7 +37,7 @@ class ActivityUploadServiceTest {
 		MemberActivityKeyEntity activityKey = activityKey(1L);
 		when(memberActivityKeyRepository.findByRecordKey("record-key-001")).thenReturn(Optional.of(activityKey));
 		when(stepRecordRepository.insertIgnore(
-			any(), any(), any(), any(), any(), any(), any()
+			any(), any(), any(), any(), any(), any(), any(), any(), any()
 		)).thenReturn(1, 0);
 
 		ActivityUploadResult result = activityUploadService.upload(1L, normalizedInput(
@@ -44,7 +45,7 @@ class ActivityUploadServiceTest {
 			List.of(new ActivityEntryValidationError(2, "steps", "ACTIVITY_INVALID_STEPS", "걸음 수가 올바르지 않습니다."))
 		));
 
-		verify(stepRecordRepository, times(2)).insertIgnore(any(), any(), any(), any(), any(), any(), any());
+		verify(stepRecordRepository, times(2)).insertIgnore(any(), any(), any(), any(), any(), any(), any(), any(), any());
 		verify(memberActivityKeyRepository).insertIgnore(1L, "record-key-001");
 		assertThat(result.totalCount()).isEqualTo(3);
 		assertThat(result.createdCount()).isEqualTo(1);
@@ -58,7 +59,7 @@ class ActivityUploadServiceTest {
 		MemberActivityKeyEntity activityKey = activityKey(1L);
 		when(memberActivityKeyRepository.findByRecordKey("record-key-001")).thenReturn(Optional.of(activityKey));
 		when(stepRecordRepository.insertIgnore(
-			any(), any(), any(), any(), any(), any(), any()
+			any(), any(), any(), any(), any(), any(), any(), any(), any()
 		)).thenReturn(0);
 
 		ActivityUploadResult result = activityUploadService.upload(1L, normalizedInput(
@@ -81,7 +82,7 @@ class ActivityUploadServiceTest {
 			.isInstanceOfSatisfying(BusinessException.class, exception ->
 				assertThat(exception.getErrorCode()).isEqualTo(ActivityErrorCode.RECORD_KEY_FORBIDDEN)
 			);
-		verify(stepRecordRepository, never()).insertIgnore(any(), any(), any(), any(), any(), any(), any());
+		verify(stepRecordRepository, never()).insertIgnore(any(), any(), any(), any(), any(), any(), any(), any(), any());
 	}
 
 	@Test
@@ -93,9 +94,32 @@ class ActivityUploadServiceTest {
 
 		verify(memberActivityKeyRepository, never()).findByRecordKey(any());
 		verify(memberActivityKeyRepository, never()).insertIgnore(any(), any());
-		verify(stepRecordRepository, never()).insertIgnore(any(), any(), any(), any(), any(), any(), any());
+		verify(stepRecordRepository, never()).insertIgnore(any(), any(), any(), any(), any(), any(), any(), any(), any());
 		assertThat(result.totalCount()).isEqualTo(1);
 		assertThat(result.invalidCount()).isEqualTo(1);
+	}
+
+	@Test
+	void 원천_칼로리가_0인_새_활동은_추정값과_규칙_버전을_함께_저장한다() {
+		MemberActivityKeyEntity activityKey = activityKey(1L);
+		when(memberActivityKeyRepository.findByRecordKey("record-key-001")).thenReturn(Optional.of(activityKey));
+		when(stepRecordRepository.insertIgnore(
+			any(), any(), any(), any(), any(), any(), any(), any(), any()
+		)).thenReturn(1);
+
+		activityUploadService.upload(1L, normalizedInput(List.of(new NormalizedStepRecordCommand(
+			Instant.parse("2024-11-15T00:00:00Z"),
+			Instant.parse("2024-11-15T00:10:00Z"),
+			new BigDecimal("100"), new BigDecimal("0.08"), BigDecimal.ZERO
+		)), List.of()));
+
+		ArgumentCaptor<BigDecimal> estimatedCalories = ArgumentCaptor.forClass(BigDecimal.class);
+		ArgumentCaptor<String> estimateVersion = ArgumentCaptor.forClass(String.class);
+		verify(stepRecordRepository).insertIgnore(
+			any(), any(), any(), any(), any(), any(), any(), estimatedCalories.capture(), estimateVersion.capture()
+		);
+		assertThat(estimatedCalories.getValue()).isEqualByComparingTo("4");
+		assertThat(estimateVersion.getValue()).isEqualTo("STEP_COUNT_V1");
 	}
 
 	private ActivityInputNormalizationResult normalizedInput(

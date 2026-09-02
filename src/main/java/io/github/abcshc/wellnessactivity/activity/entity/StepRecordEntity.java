@@ -64,6 +64,12 @@ public class StepRecordEntity {
 	@Column(name = "calories_kcal", nullable = false, precision = 30, scale = 20)
 	private BigDecimal calories;
 
+	@Column(name = "estimated_calories_kcal", nullable = false, precision = 30, scale = 20)
+	private BigDecimal estimatedCalories;
+
+	@Column(name = "calories_estimate_version", length = 30)
+	private String caloriesEstimateVersion;
+
 	protected StepRecordEntity() {
 	}
 
@@ -76,6 +82,20 @@ public class StepRecordEntity {
 		BigDecimal distance,
 		BigDecimal calories
 	) {
+		this(memberActivityKey, provider, startedAtUtc, endedAtUtc, steps, distance, calories, BigDecimal.ZERO, null);
+	}
+
+	public StepRecordEntity(
+		MemberActivityKeyEntity memberActivityKey,
+		ActivityProvider provider,
+		Instant startedAtUtc,
+		Instant endedAtUtc,
+		BigDecimal steps,
+		BigDecimal distance,
+		BigDecimal calories,
+		BigDecimal estimatedCalories,
+		String caloriesEstimateVersion
+	) {
 		this.memberActivityKey = memberActivityKey;
 		this.provider = provider;
 		this.startedAtUtc = startedAtUtc;
@@ -83,6 +103,8 @@ public class StepRecordEntity {
 		this.steps = steps;
 		this.distance = distance;
 		this.calories = calories;
+		this.estimatedCalories = estimatedCalories;
+		this.caloriesEstimateVersion = caloriesEstimateVersion;
 	}
 
 	public Instant getStartedAtUtc() {
@@ -103,6 +125,14 @@ public class StepRecordEntity {
 
 	public BigDecimal getCalories() {
 		return calories;
+	}
+
+	public BigDecimal getEstimatedCalories() {
+		return estimatedCalories;
+	}
+
+	public String getCaloriesEstimateVersion() {
+		return caloriesEstimateVersion;
 	}
 
 }

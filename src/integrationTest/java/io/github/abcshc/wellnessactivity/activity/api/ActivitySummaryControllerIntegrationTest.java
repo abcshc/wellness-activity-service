@@ -79,7 +79,38 @@ class ActivitySummaryControllerIntegrationTest {
 			.andExpect(jsonPath("$[1].date").value("2024-11-15"))
 			.andExpect(jsonPath("$[1].steps").value(32))
 			.andExpect(jsonPath("$[1].distanceKm").value(0.02422))
-			.andExpect(jsonPath("$[1].caloriesKcal").value(1.21));
+			.andExpect(jsonPath("$[1].caloriesKcal").value(1.21))
+			.andExpect(jsonPath("$[1].sourceCaloriesKcal").doesNotExist())
+			.andExpect(jsonPath("$[1].estimatedCaloriesKcal").doesNotExist())
+			.andExpect(jsonPath("$[1].caloriesEstimateVersion").doesNotExist());
+	}
+
+	@Test
+	void 원천_칼로리가_0이면_일별_조회에_걸음수_기반_추정값을_포함한다() throws Exception {
+		MemberEntity member = savedMember("member@example.com");
+		MemberActivityKeyEntity activityKey = savedActivityKey(member, "record-key-001");
+		stepRecordRepository.saveAndFlush(new StepRecordEntity(
+			activityKey,
+			ActivityProvider.APPLE_HEALTH,
+			Instant.parse("2024-11-15T00:00:00Z"),
+			Instant.parse("2024-11-15T00:10:00Z"),
+			new BigDecimal("100"),
+			new BigDecimal("0.08"),
+			BigDecimal.ZERO,
+			new BigDecimal("4"),
+			"STEP_COUNT_V1"
+		));
+
+		mockMvc.perform(get("/api/v1/activities/steps/daily")
+				.header(HttpHeaders.AUTHORIZATION, bearerToken(member))
+				.param("recordkey", "record-key-001")
+				.param("from", "2024-11-15")
+				.param("to", "2024-11-15"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$[0].caloriesKcal").value(4))
+			.andExpect(jsonPath("$[0].sourceCaloriesKcal").doesNotExist())
+			.andExpect(jsonPath("$[0].estimatedCaloriesKcal").doesNotExist())
+			.andExpect(jsonPath("$[0].caloriesEstimateVersion").doesNotExist());
 	}
 
 	@Test

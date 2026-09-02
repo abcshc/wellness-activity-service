@@ -37,6 +37,8 @@ erDiagram
         decimal steps
         decimal distance_km
         decimal calories_kcal
+        decimal estimated_calories_kcal
+        varchar calories_estimate_version
     }
     MEMBERS ||--o{ REFRESH_TOKENS : issues
     REFRESH_TOKENS o|--o| REFRESH_TOKENS : replaces
@@ -99,13 +101,11 @@ erDiagram
 | `steps` | `DECIMAL(30,20)` | NOT NULL | 원천 걸음 수 |
 | `distance_km` | `DECIMAL(30,20)` | NOT NULL | 원천 거리(km) |
 | `calories_kcal` | `DECIMAL(30,20)` | NOT NULL | 원천 칼로리(kcal) |
+| `estimated_calories_kcal` | `DECIMAL(30,20)` | NOT NULL | 원천 칼로리 부재 시 저장한 참고용 추정 칼로리(kcal) |
+| `calories_estimate_version` | `VARCHAR(30)` | NULL | 추정값을 저장한 경우의 계산 규칙 버전 |
 
 `uk_step_records_key_provider_period` 유니크 제약조건은 회원별 활동 키·provider·시작·종료 시각이 같은 원본 이벤트의 중복 저장을 막습니다. 업로드 서비스는 MySQL `INSERT IGNORE`로 충돌을 오류 없이 무시해 최초 원본을 유지합니다.
 
 `idx_step_records_key_started_at_utc` 인덱스는 회원별 활동 키의 기간 조회와 일·월 집계에 사용합니다.
-
-## 미구현 범위
-
-- 원천 활동 에너지 수집과 추정 칼로리 정책
 
 건강활동 기능의 입력 정규화·중복 수집·권한 정책은 [건강활동 데이터 기능 명세](features/activity-data.md)에 정리했습니다.

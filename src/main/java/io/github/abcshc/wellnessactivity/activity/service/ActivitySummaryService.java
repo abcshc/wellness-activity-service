@@ -92,7 +92,9 @@ public class ActivitySummaryService {
 			buckets.stream()
 				.filter(bucket -> bucket.contains(startedAt))
 				.findFirst()
-				.ifPresent(bucket -> totals.get(bucket.label()).add(record.getSteps(), record.getDistance(), record.getCalories()));
+				.ifPresent(bucket -> totals.get(bucket.label()).add(
+					record.getSteps(), record.getDistance(), record.getCalories(), record.getEstimatedCalories()
+				));
 			return;
 		}
 
@@ -104,7 +106,8 @@ public class ActivitySummaryService {
 		BigDecimal totalDuration = BigDecimal.valueOf(Duration.between(startedAt, endedAt).toNanos());
 		BigDecimal remainingSteps = record.getSteps();
 		BigDecimal remainingDistance = record.getDistance();
-		BigDecimal remainingCalories = record.getCalories();
+		BigDecimal remainingSourceCalories = record.getCalories();
+		BigDecimal remainingEstimatedCalories = record.getEstimatedCalories();
 		boolean coversWholeRecord = !overlaps.get(0).startInclusive().isAfter(startedAt)
 			&& !overlaps.get(overlaps.size() - 1).endExclusive().isBefore(endedAt);
 
@@ -115,13 +118,16 @@ public class ActivitySummaryService {
 				? remainingSteps : allocateValue(record.getSteps(), startedAt, endedAt, bucket, totalDuration);
 			BigDecimal distance = coversWholeRecord && isLastOverlap
 				? remainingDistance : allocateValue(record.getDistance(), startedAt, endedAt, bucket, totalDuration);
-			BigDecimal calories = coversWholeRecord && isLastOverlap
-				? remainingCalories : allocateValue(record.getCalories(), startedAt, endedAt, bucket, totalDuration);
+			BigDecimal sourceCalories = coversWholeRecord && isLastOverlap
+				? remainingSourceCalories : allocateValue(record.getCalories(), startedAt, endedAt, bucket, totalDuration);
+			BigDecimal estimatedCaloriesForBucket = coversWholeRecord && isLastOverlap
+				? remainingEstimatedCalories : allocateValue(record.getEstimatedCalories(), startedAt, endedAt, bucket, totalDuration);
 
-			totals.get(bucket.label()).add(steps, distance, calories);
+			totals.get(bucket.label()).add(steps, distance, sourceCalories, estimatedCaloriesForBucket);
 			remainingSteps = remainingSteps.subtract(steps);
 			remainingDistance = remainingDistance.subtract(distance);
-			remainingCalories = remainingCalories.subtract(calories);
+			remainingSourceCalories = remainingSourceCalories.subtract(sourceCalories);
+			remainingEstimatedCalories = remainingEstimatedCalories.subtract(estimatedCaloriesForBucket);
 		}
 	}
 
@@ -176,26 +182,43 @@ public class ActivitySummaryService {
 	private record LabeledActivityTotal<T>(T label, ActivityTotal total) {
 	}
 
-	private record ActivityTotal(BigDecimal steps, BigDecimal distanceKm, BigDecimal caloriesKcal) {
+	private record ActivityTotal(
+		BigDecimal steps,
+		BigDecimal distanceKm,
+		BigDecimal sourceCaloriesKcal,
+		BigDecimal estimatedCaloriesKcal
+	) {
+
+		private BigDecimal caloriesKcal() {
+			return sourceCaloriesKcal.add(estimatedCaloriesKcal);
+		}
 	}
 
 	private static class MutableActivityTotal {
 
 		private BigDecimal steps = ZERO;
 		private BigDecimal distanceKm = ZERO;
-		private BigDecimal caloriesKcal = ZERO;
+		private BigDecimal sourceCaloriesKcal = ZERO;
+		private BigDecimal estimatedCaloriesKcal = ZERO;
 
-		private void add(BigDecimal steps, BigDecimal distanceKm, BigDecimal caloriesKcal) {
+		private void add(
+			BigDecimal steps,
+			BigDecimal distanceKm,
+			BigDecimal sourceCaloriesKcal,
+			BigDecimal estimatedCaloriesKcal
+		) {
 			this.steps = this.steps.add(steps);
 			this.distanceKm = this.distanceKm.add(distanceKm);
-			this.caloriesKcal = this.caloriesKcal.add(caloriesKcal);
+			this.sourceCaloriesKcal = this.sourceCaloriesKcal.add(sourceCaloriesKcal);
+			this.estimatedCaloriesKcal = this.estimatedCaloriesKcal.add(estimatedCaloriesKcal);
 		}
 
 		private ActivityTotal toTotal() {
 			return new ActivityTotal(
 				normalize(steps),
 				normalize(distanceKm),
-				normalize(caloriesKcal)
+				normalize(sourceCaloriesKcal),
+				normalize(estimatedCaloriesKcal)
 			);
 		}
 

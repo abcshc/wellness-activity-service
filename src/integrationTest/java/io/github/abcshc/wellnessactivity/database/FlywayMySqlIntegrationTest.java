@@ -30,7 +30,7 @@ class FlywayMySqlIntegrationTest {
 
 		assertThat(flyway.info().all())
 			.extracting(migration -> migration.getVersion().getVersion())
-			.containsExactly("01", "02", "03", "04", "05");
-		assertThat(historyCount).isEqualTo(5);
+			.containsExactly("01", "02", "03", "04", "05", "06");
+		assertThat(historyCount).isEqualTo(6);
 	}
 }
