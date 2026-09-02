@@ -73,6 +73,7 @@ public class ActivityInputNormalizer {
 		return switch (source.name()) {
 			case "SamsungHealth" -> ActivityProvider.SAMSUNG_HEALTH;
 			case "Health Kit" -> ActivityProvider.APPLE_HEALTH;
+			case "HealthConnect" -> ActivityProvider.HEALTH_CONNECT;
 			default -> throw new BusinessException(ActivityErrorCode.INVALID_SOURCE);
 		};
 	}

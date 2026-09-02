@@ -18,6 +18,7 @@
 | --- | --- |
 | `SamsungHealth` | `SAMSUNG_HEALTH` |
 | `Health Kit` | `APPLE_HEALTH` |
+| `HealthConnect` | `HEALTH_CONNECT` |
 
 ## 입력 검증
 

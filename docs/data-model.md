@@ -95,7 +95,7 @@ erDiagram
 | --- | --- | --- | --- |
 | `id` | `BIGINT` | PK, 자동 생성 | 내부 걸음수 이벤트 식별자 |
 | `member_activity_key_id` | `BIGINT` | NOT NULL, FK | 회원별 활동 키 |
-| `provider` | `VARCHAR(20)` | NOT NULL | `SAMSUNG_HEALTH`, `APPLE_HEALTH` 원천 |
+| `provider` | `VARCHAR(20)` | NOT NULL | `SAMSUNG_HEALTH`, `APPLE_HEALTH`, `HEALTH_CONNECT` 원천 |
 | `started_at_utc` | `DATETIME(6)` | NOT NULL | 활동 시작 시점(UTC) |
 | `ended_at_utc` | `DATETIME(6)` | NOT NULL | 활동 종료 시점(UTC) |
 | `steps` | `DECIMAL(30,20)` | NOT NULL | 원천 걸음 수 |

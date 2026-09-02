@@ -58,7 +58,7 @@ class ActivityInputNormalizerTest {
 	}
 
 	@Test
-	void Samsung과_Apple_시각을_UTC_Instant로_정규화한다() {
+	void Samsung과_Apple_HealthConnect_시각을_UTC_Instant로_정규화한다() {
 		ActivityInputNormalizationResult samsung = normalizer.normalize(upload(
 			"SamsungHealth",
 			List.of(entry("2024-11-15 00:00:00", "2024-11-15 00:10:00", "32", "0.02422", "1.21")),
@@ -69,15 +69,24 @@ class ActivityInputNormalizerTest {
 			List.of(entry("2024-11-14T15:00:00+0000", "2024-11-14T15:10:00+0000", "32", "0.02422", "1.21")),
 			"steps"
 		));
+		ActivityInputNormalizationResult healthConnect = normalizer.normalize(upload(
+			"HealthConnect",
+			List.of(entry("2024-11-14T15:00:00+0000", "2024-11-14T15:10:00+0000", "32", "0.02422", "1.21")),
+			"steps"
+		));
 
 		assertThat(samsung.command().provider()).isEqualTo(ActivityProvider.SAMSUNG_HEALTH);
 		assertThat(apple.command().provider()).isEqualTo(ActivityProvider.APPLE_HEALTH);
+		assertThat(healthConnect.command().provider()).isEqualTo(ActivityProvider.HEALTH_CONNECT);
 		assertThat(samsung.command().records().get(0).startedAtUtc())
 			.isEqualTo(Instant.parse("2024-11-15T00:00:00Z"));
 		assertThat(apple.command().records().get(0).startedAtUtc())
 			.isEqualTo(Instant.parse("2024-11-14T15:00:00Z"));
+		assertThat(healthConnect.command().records().get(0).startedAtUtc())
+			.isEqualTo(Instant.parse("2024-11-14T15:00:00Z"));
 		assertThat(samsung.invalidEntries()).isEmpty();
 		assertThat(apple.invalidEntries()).isEmpty();
+		assertThat(healthConnect.invalidEntries()).isEmpty();
 	}
 
 	@Test

@@ -88,6 +88,26 @@ class ActivityUploadControllerIntegrationTest {
 	}
 
 	@Test
+	void HealthConnect_정규화_활동을_저장한다() throws Exception {
+		MemberEntity member = savedMember("health-connect@example.com");
+
+		mockMvc.perform(post("/api/v1/activities/steps")
+				.header(HttpHeaders.AUTHORIZATION, bearerToken(member))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(uploadRequestWithSource("HealthConnect", """
+					{
+					  "period": {"from": "2025-02-01T00:00:00+0900", "to": "2025-02-01T00:10:00+0900"},
+					  "steps": 94,
+					  "distance": {"unit": "km", "value": 0.071},
+					  "calories": {"unit": "kcal", "value": 3.4}
+					}
+					""")))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.createdCount").value(1))
+			.andExpect(jsonPath("$.invalidCount").value(0));
+	}
+
+	@Test
 	void recordkey가_없으면_공통_400_오류를_반환한다() throws Exception {
 		MemberEntity member = savedMember("member@example.com");
 
@@ -153,16 +173,20 @@ class ActivityUploadControllerIntegrationTest {
 	}
 
 	private String uploadRequest(String... entries) {
+		return uploadRequestWithSource("SamsungHealth", entries);
+	}
+
+	private String uploadRequestWithSource(String sourceName, String... entries) {
 		return """
 			{
 			  "recordkey": "record-key-001",
 			  "type": "steps",
 			  "data": {
-			    "source": {"name": "SamsungHealth"},
+			    "source": {"name": "%s"},
 			    "entries": [%s]
 			  }
 			}
-			""".formatted(String.join(",", entries));
+			""".formatted(sourceName, String.join(",", entries));
 	}
 
 	private String validEntry() {
