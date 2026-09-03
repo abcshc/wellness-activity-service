@@ -30,7 +30,34 @@ class FlywayMySqlIntegrationTest {
 
 		assertThat(flyway.info().all())
 			.extracting(migration -> migration.getVersion().getVersion())
-			.containsExactly("01", "02", "03", "04", "05", "06");
-		assertThat(historyCount).isEqualTo(6);
+			.containsExactly("01", "02", "03", "04", "05", "06", "07");
+		assertThat(historyCount).isEqualTo(7);
+	}
+
+	@Test
+	void MySQL에_활동키와_KST_활동일을_유일하게_갖는_일별_집계_테이블을_생성한다() {
+		Integer tableCount = jdbcTemplate.queryForObject(
+			"""
+				select count(*)
+				from information_schema.tables
+				where table_schema = database()
+				  and table_name = 'daily_activity_summaries'
+				""",
+			Integer.class
+		);
+
+		Integer uniqueIndexColumnCount = jdbcTemplate.queryForObject(
+			"""
+				select count(*)
+				from information_schema.statistics
+				where table_schema = database()
+				  and table_name = 'daily_activity_summaries'
+				  and index_name = 'uk_daily_activity_summaries_key_date'
+				""",
+			Integer.class
+		);
+
+		assertThat(tableCount).isEqualTo(1);
+		assertThat(uniqueIndexColumnCount).isEqualTo(2);
 	}
 }

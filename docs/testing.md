@@ -19,6 +19,8 @@
 
 기본 `test` 작업은 `src/test`의 단위 테스트만 실행합니다. `integrationTest` 작업은 `src/integrationTest`의 테스트를 실행하며, Testcontainers가 `mysql:8.4.8` 컨테이너를 시작하고 종료합니다. `build` 작업은 두 테스트 계층을 모두 실행합니다.
 
+`FlywayMySqlIntegrationTest`는 Spring Boot가 적용하는 전체 Flyway 버전과 `daily_activity_summaries`의 활동 키·KST 활동일 유니크 제약조건을 확인합니다. `ExternalFlywayMigrationIntegrationTest`는 별도 Flyway 컨테이너로 동일 migration을 적용한 뒤, 애플리케이션이 Hibernate `validate`로 해당 스키마를 검증할 수 있는지 확인합니다.
+
 ## 요청 크기별 활동 업로드 검증
 
 `ActivityUploadRequestSizeIntegrationTest`는 “한 번에 큰 요청이 와도 정확히 저장되는가?”를 확인합니다. 실제 MySQL에서 100·500·1,000개 항목을 각각 업로드하고, SamsungHealth·Health Kit·HealthConnect의 시간 표현도 함께 확인합니다. 응답의 `createdCount`와 실제 저장 행 수가 요청 항목 수와 같아야 통과합니다.

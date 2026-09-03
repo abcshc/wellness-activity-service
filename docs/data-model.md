@@ -2,7 +2,7 @@
 
 > 상태: 구현 완료
 
-회원·인증 토큰·걸음수 원본 이벤트를 위한 `members`, `refresh_tokens`, `member_activity_keys`, `step_records` 테이블을 구현했습니다. 일·월 집계 테이블은 원본 이벤트 직접 집계 방침에 따라 만들지 않습니다.
+회원·인증 토큰·걸음수 원본 이벤트와 KST 일별 활동 집계를 위한 `members`, `refresh_tokens`, `member_activity_keys`, `step_records`, `daily_activity_summaries` 테이블을 구현했습니다. 원본 이벤트는 복구·재집계의 기준으로 보관하고, 일별 집계는 조회용 파생 데이터로 사용합니다.
 
 ```mermaid
 erDiagram
@@ -40,10 +40,20 @@ erDiagram
         decimal estimated_calories_kcal
         varchar calories_estimate_version
     }
+    DAILY_ACTIVITY_SUMMARIES {
+        bigint id PK
+        bigint member_activity_key_id FK
+        date activity_date UK
+        decimal steps
+        decimal distance_km
+        decimal source_calories_kcal
+        decimal estimated_calories_kcal
+    }
     MEMBERS ||--o{ REFRESH_TOKENS : issues
     REFRESH_TOKENS o|--o| REFRESH_TOKENS : replaces
     MEMBERS ||--o{ MEMBER_ACTIVITY_KEYS : owns
     MEMBER_ACTIVITY_KEYS ||--o{ STEP_RECORDS : contains
+    MEMBER_ACTIVITY_KEYS ||--o{ DAILY_ACTIVITY_SUMMARIES : summarizes
 ```
 
 ## members
@@ -107,5 +117,25 @@ erDiagram
 `uk_step_records_key_provider_period` 유니크 제약조건은 회원별 활동 키·provider·시작·종료 시각이 같은 원본 이벤트의 중복 저장을 막습니다. 업로드 서비스는 MySQL `INSERT IGNORE`로 충돌을 오류 없이 무시해 최초 원본을 유지합니다.
 
 `idx_step_records_key_started_at_utc` 인덱스는 회원별 활동 키의 기간 조회와 일·월 집계에 사용합니다.
+
+## daily_activity_summaries
+
+`daily_activity_summaries`는 원본 이벤트의 `Asia/Seoul`(KST) 기준 일별 기여값을 저장하는 조회용 파생 테이블입니다. 원본 이벤트는 그대로 보관하므로, 집계 규칙 변경이나 복구가 필요할 때 원본을 기준으로 다시 만들 수 있습니다.
+
+| 컬럼 | 타입 | 제약조건 | 설명 |
+| --- | --- | --- | --- |
+| `id` | `BIGINT` | PK, 자동 생성 | 내부 일별 집계 식별자 |
+| `member_activity_key_id` | `BIGINT` | NOT NULL, FK | 집계가 속한 회원별 활동 키 |
+| `activity_date` | `DATE` | NOT NULL | `Asia/Seoul` 기준 활동 날짜 |
+| `steps` | `DECIMAL(30,20)` | NOT NULL | 해당 활동일에 귀속된 걸음 수 |
+| `distance_km` | `DECIMAL(30,20)` | NOT NULL | 해당 활동일에 귀속된 이동 거리(km) |
+| `source_calories_kcal` | `DECIMAL(30,20)` | NOT NULL | 원천 데이터가 제공한 소모 칼로리(kcal) |
+| `estimated_calories_kcal` | `DECIMAL(30,20)` | NOT NULL | 걸음수 기반 참고 추정 칼로리(kcal) |
+
+API의 업무 조회 조건은 외부 `record_key`입니다. 서비스는 인증·소유권 검증 뒤 `member_activity_keys`에서 해당 키의 내부 식별자를 얻고, 그 `member_activity_key_id`로 이 테이블을 조회합니다. `record_key`는 이미 유일한 연결 테이블에 보관하므로 집계 테이블에 문자열을 중복 저장하지 않습니다.
+
+`uk_daily_activity_summaries_key_date` 유니크 제약조건은 하나의 활동 키와 `Asia/Seoul` 활동 날짜 조합에 하나의 집계 행만 두도록 보장합니다. 이 유니크 인덱스는 활동 키별 날짜 범위 조회에도 사용합니다. 시간대는 현재 서비스 정책으로 고정되어 있어 별도 컬럼으로 저장하지 않습니다.
+
+현재는 스키마와 영속 매핑만 추가된 상태입니다. 원본 저장 성공분을 같은 트랜잭션에서 집계에 반영하고 Daily·Monthly 조회를 이 테이블로 전환하는 작업은 이후 단계에서 구현합니다.
 
 건강활동 기능의 입력 정규화·중복 수집·권한 정책은 [건강활동 데이터 기능 명세](features/activity-data.md)에 정리했습니다.
