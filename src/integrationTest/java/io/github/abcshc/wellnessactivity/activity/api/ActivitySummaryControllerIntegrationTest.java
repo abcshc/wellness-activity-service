@@ -5,18 +5,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import io.github.abcshc.wellnessactivity.WellnessActivityServiceApplication;
-import io.github.abcshc.wellnessactivity.activity.entity.ActivityProvider;
+import io.github.abcshc.wellnessactivity.activity.entity.DailyActivitySummaryEntity;
 import io.github.abcshc.wellnessactivity.activity.entity.MemberActivityKeyEntity;
-import io.github.abcshc.wellnessactivity.activity.entity.StepRecordEntity;
-import io.github.abcshc.wellnessactivity.activity.repository.MemberActivityKeyRepository;
 import io.github.abcshc.wellnessactivity.activity.repository.DailyActivitySummaryRepository;
-import io.github.abcshc.wellnessactivity.activity.repository.StepRecordRepository;
+import io.github.abcshc.wellnessactivity.activity.repository.MemberActivityKeyRepository;
 import io.github.abcshc.wellnessactivity.auth.token.JwtTokenIssuer;
 import io.github.abcshc.wellnessactivity.member.entity.MemberEntity;
 import io.github.abcshc.wellnessactivity.member.repository.MemberRepository;
 import io.github.abcshc.wellnessactivity.support.MySqlTestContainerConfiguration;
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import org.junit.jupiter.api.AfterEach;
@@ -47,14 +44,10 @@ class ActivitySummaryControllerIntegrationTest {
 	private MemberActivityKeyRepository memberActivityKeyRepository;
 
 	@Autowired
-	private StepRecordRepository stepRecordRepository;
-
-	@Autowired
 	private DailyActivitySummaryRepository dailyActivitySummaryRepository;
 
 	@AfterEach
 	void tearDown() {
-		stepRecordRepository.deleteAll();
 		dailyActivitySummaryRepository.deleteAll();
 		memberActivityKeyRepository.deleteAll();
 		memberRepository.deleteAll();
@@ -64,15 +57,7 @@ class ActivitySummaryControllerIntegrationTest {
 	void 본인의_일별_요약을_연속된_날짜와_함께_조회한다() throws Exception {
 		MemberEntity member = savedMember("member@example.com");
 		MemberActivityKeyEntity activityKey = savedActivityKey(member, "record-key-001");
-		stepRecordRepository.saveAndFlush(new StepRecordEntity(
-			activityKey,
-			ActivityProvider.SAMSUNG_HEALTH,
-			Instant.parse("2024-11-15T00:00:00Z"),
-			Instant.parse("2024-11-15T00:10:00Z"),
-			new BigDecimal("32"),
-			new BigDecimal("0.02422"),
-			new BigDecimal("1.21")
-		));
+		saveDailySummary(activityKey, LocalDate.of(2024, 11, 15), "32", "0.02422", "1.21", "0");
 
 		mockMvc.perform(get("/api/v1/activities/steps/daily")
 				.header(HttpHeaders.AUTHORIZATION, bearerToken(member))
@@ -97,17 +82,7 @@ class ActivitySummaryControllerIntegrationTest {
 	void 원천_칼로리가_0이면_일별_조회에_걸음수_기반_추정값을_포함한다() throws Exception {
 		MemberEntity member = savedMember("member@example.com");
 		MemberActivityKeyEntity activityKey = savedActivityKey(member, "record-key-001");
-		stepRecordRepository.saveAndFlush(new StepRecordEntity(
-			activityKey,
-			ActivityProvider.APPLE_HEALTH,
-			Instant.parse("2024-11-15T00:00:00Z"),
-			Instant.parse("2024-11-15T00:10:00Z"),
-			new BigDecimal("100"),
-			new BigDecimal("0.08"),
-			BigDecimal.ZERO,
-			new BigDecimal("4"),
-			"STEP_COUNT_V1"
-		));
+		saveDailySummary(activityKey, LocalDate.of(2024, 11, 15), "100", "0.08", "0", "4");
 
 		mockMvc.perform(get("/api/v1/activities/steps/daily")
 				.header(HttpHeaders.AUTHORIZATION, bearerToken(member))
@@ -156,15 +131,7 @@ class ActivitySummaryControllerIntegrationTest {
 	void 최대_366일_범위는_빈_날짜를_포함해_연속된_일별_버킷을_반환한다() throws Exception {
 		MemberEntity member = savedMember("member@example.com");
 		MemberActivityKeyEntity activityKey = savedActivityKey(member, "record-key-001");
-		stepRecordRepository.saveAndFlush(new StepRecordEntity(
-			activityKey,
-			ActivityProvider.HEALTH_CONNECT,
-			Instant.parse("2024-11-14T15:00:00Z"),
-			Instant.parse("2024-11-14T15:10:00Z"),
-			new BigDecimal("32"),
-			new BigDecimal("0.024"),
-			new BigDecimal("1.2")
-		));
+		saveDailySummary(activityKey, LocalDate.of(2024, 11, 15), "32", "0.024", "1.2", "0");
 
 		ResultActions response = mockMvc.perform(get("/api/v1/activities/steps/daily")
 				.header(HttpHeaders.AUTHORIZATION, bearerToken(member))
@@ -187,15 +154,7 @@ class ActivitySummaryControllerIntegrationTest {
 	void 최대_24개월_범위는_빈_월을_포함해_연속된_월별_버킷을_반환한다() throws Exception {
 		MemberEntity member = savedMember("member@example.com");
 		MemberActivityKeyEntity activityKey = savedActivityKey(member, "record-key-001");
-		stepRecordRepository.saveAndFlush(new StepRecordEntity(
-			activityKey,
-			ActivityProvider.HEALTH_CONNECT,
-			Instant.parse("2023-12-31T15:00:00Z"),
-			Instant.parse("2023-12-31T15:10:00Z"),
-			new BigDecimal("50"),
-			new BigDecimal("0.04"),
-			new BigDecimal("2")
-		));
+		saveDailySummary(activityKey, LocalDate.of(2024, 1, 1), "50", "0.04", "2", "0");
 
 		ResultActions response = mockMvc.perform(get("/api/v1/activities/steps/monthly")
 				.header(HttpHeaders.AUTHORIZATION, bearerToken(member))
@@ -281,6 +240,24 @@ class ActivitySummaryControllerIntegrationTest {
 
 	private MemberActivityKeyEntity savedActivityKey(MemberEntity member, String recordKey) {
 		return memberActivityKeyRepository.saveAndFlush(new MemberActivityKeyEntity(member, recordKey));
+	}
+
+	private void saveDailySummary(
+		MemberActivityKeyEntity activityKey,
+		LocalDate activityDate,
+		String steps,
+		String distanceKm,
+		String sourceCaloriesKcal,
+		String estimatedCaloriesKcal
+	) {
+		dailyActivitySummaryRepository.saveAndFlush(new DailyActivitySummaryEntity(
+			activityKey,
+			activityDate,
+			new BigDecimal(steps),
+			new BigDecimal(distanceKm),
+			new BigDecimal(sourceCaloriesKcal),
+			new BigDecimal(estimatedCaloriesKcal)
+		));
 	}
 
 	private String bearerToken(MemberEntity member) {

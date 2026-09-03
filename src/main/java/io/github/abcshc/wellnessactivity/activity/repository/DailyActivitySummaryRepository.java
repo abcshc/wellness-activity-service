@@ -1,14 +1,35 @@
 package io.github.abcshc.wellnessactivity.activity.repository;
 
 import io.github.abcshc.wellnessactivity.activity.entity.DailyActivitySummaryEntity;
+import io.github.abcshc.wellnessactivity.activity.entity.MemberActivityKeyEntity;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface DailyActivitySummaryRepository extends JpaRepository<DailyActivitySummaryEntity, Long> {
+
+	@Query("""
+		select new io.github.abcshc.wellnessactivity.activity.repository.DailyActivitySummaryView(
+			summary.activityDate,
+			summary.steps,
+			summary.distanceKm,
+			summary.sourceCaloriesKcal,
+			summary.estimatedCaloriesKcal
+		)
+		from DailyActivitySummaryEntity summary
+		where summary.memberActivityKey = :memberActivityKey
+		  and summary.activityDate between :from and :to
+		order by summary.activityDate asc
+		""")
+	List<DailyActivitySummaryView> findSummaries(
+		@Param("memberActivityKey") MemberActivityKeyEntity memberActivityKey,
+		@Param("from") LocalDate from,
+		@Param("to") LocalDate to
+	);
 
 	@Modifying
 	@Query(value = """
