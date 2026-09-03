@@ -16,6 +16,8 @@ import io.github.abcshc.wellnessactivity.member.repository.MemberRepository;
 import io.github.abcshc.wellnessactivity.support.MySqlTestContainerConfiguration;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.YearMonth;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +26,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 
 @SpringBootTest(classes = WellnessActivityServiceApplication.class)
 @AutoConfigureMockMvc
@@ -145,6 +148,94 @@ class ActivitySummaryControllerIntegrationTest {
 	}
 
 	@Test
+	void 최대_366일_범위는_빈_날짜를_포함해_연속된_일별_버킷을_반환한다() throws Exception {
+		MemberEntity member = savedMember("member@example.com");
+		MemberActivityKeyEntity activityKey = savedActivityKey(member, "record-key-001");
+		stepRecordRepository.saveAndFlush(new StepRecordEntity(
+			activityKey,
+			ActivityProvider.HEALTH_CONNECT,
+			Instant.parse("2024-11-14T15:00:00Z"),
+			Instant.parse("2024-11-14T15:10:00Z"),
+			new BigDecimal("32"),
+			new BigDecimal("0.024"),
+			new BigDecimal("1.2")
+		));
+
+		ResultActions response = mockMvc.perform(get("/api/v1/activities/steps/daily")
+				.header(HttpHeaders.AUTHORIZATION, bearerToken(member))
+				.param("recordkey", "record-key-001")
+				.param("from", "2024-11-15")
+				.param("to", "2025-11-15"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.length()").value(366))
+			.andExpect(jsonPath("$[0].date").value("2024-11-15"))
+			.andExpect(jsonPath("$[0].steps").value(32))
+			.andExpect(jsonPath("$[1].date").value("2024-11-16"))
+			.andExpect(jsonPath("$[1].steps").value(0))
+			.andExpect(jsonPath("$[365].date").value("2025-11-15"))
+			.andExpect(jsonPath("$[365].steps").value(0));
+
+		expectDailyBucketDates(response, LocalDate.parse("2024-11-15"), 366);
+	}
+
+	@Test
+	void 최대_24개월_범위는_빈_월을_포함해_연속된_월별_버킷을_반환한다() throws Exception {
+		MemberEntity member = savedMember("member@example.com");
+		MemberActivityKeyEntity activityKey = savedActivityKey(member, "record-key-001");
+		stepRecordRepository.saveAndFlush(new StepRecordEntity(
+			activityKey,
+			ActivityProvider.HEALTH_CONNECT,
+			Instant.parse("2023-12-31T15:00:00Z"),
+			Instant.parse("2023-12-31T15:10:00Z"),
+			new BigDecimal("50"),
+			new BigDecimal("0.04"),
+			new BigDecimal("2")
+		));
+
+		ResultActions response = mockMvc.perform(get("/api/v1/activities/steps/monthly")
+				.header(HttpHeaders.AUTHORIZATION, bearerToken(member))
+				.param("recordkey", "record-key-001")
+				.param("from", "2024-01")
+				.param("to", "2025-12"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.length()").value(24))
+			.andExpect(jsonPath("$[0].month").value("2024-01"))
+			.andExpect(jsonPath("$[0].steps").value(50))
+			.andExpect(jsonPath("$[1].month").value("2024-02"))
+			.andExpect(jsonPath("$[1].steps").value(0))
+			.andExpect(jsonPath("$[23].month").value("2025-12"))
+			.andExpect(jsonPath("$[23].steps").value(0));
+
+		expectMonthlyBucketLabels(response, YearMonth.parse("2024-01"), 24);
+	}
+
+	@Test
+	void 일별_367일_조회_범위는_범위_초과_오류를_반환한다() throws Exception {
+		MemberEntity member = savedMember("member@example.com");
+
+		mockMvc.perform(get("/api/v1/activities/steps/daily")
+				.header(HttpHeaders.AUTHORIZATION, bearerToken(member))
+				.param("recordkey", "record-key-001")
+				.param("from", "2024-01-01")
+				.param("to", "2025-01-01"))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("ACTIVITY_DAILY_RANGE_TOO_LARGE"));
+	}
+
+	@Test
+	void 월별_25개월_조회_범위는_범위_초과_오류를_반환한다() throws Exception {
+		MemberEntity member = savedMember("member@example.com");
+
+		mockMvc.perform(get("/api/v1/activities/steps/monthly")
+				.header(HttpHeaders.AUTHORIZATION, bearerToken(member))
+				.param("recordkey", "record-key-001")
+				.param("from", "2024-01")
+				.param("to", "2026-01"))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("ACTIVITY_MONTHLY_RANGE_TOO_LARGE"));
+	}
+
+	@Test
 	void 잘못된_조회_범위는_400_오류를_반환한다() throws Exception {
 		MemberEntity member = savedMember("member@example.com");
 
@@ -189,5 +280,17 @@ class ActivitySummaryControllerIntegrationTest {
 
 	private String bearerToken(MemberEntity member) {
 		return "Bearer " + jwtTokenIssuer.issue(member.getId()).value();
+	}
+
+	private void expectDailyBucketDates(ResultActions response, LocalDate from, int size) throws Exception {
+		for (int index = 0; index < size; index++) {
+			response.andExpect(jsonPath("$[%d].date".formatted(index)).value(from.plusDays(index).toString()));
+		}
+	}
+
+	private void expectMonthlyBucketLabels(ResultActions response, YearMonth from, int size) throws Exception {
+		for (int index = 0; index < size; index++) {
+			response.andExpect(jsonPath("$[%d].month".formatted(index)).value(from.plusMonths(index).toString()));
+		}
 	}
 }

@@ -47,6 +47,8 @@ MockMvc 계약 테스트로 비즈니스 오류, 입력값 오류, 예상하지 
 | `AUTH_INVALID_REFRESH_TOKEN` | `401 Unauthorized` | 유효하지 않은 Refresh Token입니다. |
 | `ACTIVITY_RECORD_KEY_FORBIDDEN` | `403 Forbidden` | 조회·사용 권한이 없는 활동 키입니다. |
 | `ACTIVITY_INVALID_DAILY_RANGE` | `400 Bad Request` | 일별 조회 기간이 올바르지 않습니다. |
+| `ACTIVITY_DAILY_RANGE_TOO_LARGE` | `400 Bad Request` | 일별 조회 기간이 최대 366일을 초과했습니다. |
 | `ACTIVITY_INVALID_MONTHLY_RANGE` | `400 Bad Request` | 월별 조회 기간이 올바르지 않습니다. |
+| `ACTIVITY_MONTHLY_RANGE_TOO_LARGE` | `400 Bad Request` | 월별 조회 기간이 최대 24개월을 초과했습니다. |
 | `INVALID_REQUEST` | `400 Bad Request` | 요청값이 올바르지 않습니다. |
 | `INTERNAL_SERVER_ERROR` | `500 Internal Server Error` | 처리 중 알 수 없는 오류가 발생했습니다. |
