@@ -8,6 +8,7 @@ public enum ActivityErrorCode implements ErrorCode {
 	INVALID_RECORD_KEY("ACTIVITY_INVALID_RECORD_KEY", "recordkey가 올바르지 않습니다."),
 	INVALID_SOURCE("ACTIVITY_INVALID_SOURCE", "활동 데이터 원천이 올바르지 않습니다."),
 	INVALID_ENTRIES("ACTIVITY_INVALID_ENTRIES", "활동 항목 목록이 올바르지 않습니다."),
+	ENTRIES_TOO_MANY("ACTIVITY_ENTRIES_TOO_MANY", "활동 항목은 한 요청에 최대 1,000건입니다."),
 	INVALID_PERIOD("ACTIVITY_INVALID_PERIOD", "활동 기간이 올바르지 않습니다."),
 	INVALID_STEPS("ACTIVITY_INVALID_STEPS", "걸음 수가 올바르지 않습니다."),
 	INVALID_DISTANCE_UNIT("ACTIVITY_INVALID_DISTANCE_UNIT", "거리 단위는 km이어야 합니다."),

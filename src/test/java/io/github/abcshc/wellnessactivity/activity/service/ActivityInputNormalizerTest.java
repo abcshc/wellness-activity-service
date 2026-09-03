@@ -14,6 +14,7 @@ import io.github.abcshc.wellnessactivity.activity.error.ActivityErrorCode;
 import io.github.abcshc.wellnessactivity.common.exception.BusinessException;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
@@ -141,6 +142,20 @@ class ActivityInputNormalizerTest {
 		assertThatThrownBy(() -> normalizer.normalize(upload("Unknown", List.of(), "steps")))
 			.isInstanceOfSatisfying(BusinessException.class, exception ->
 				assertThat(exception.getErrorCode()).isEqualTo(ActivityErrorCode.INVALID_SOURCE)
+			);
+	}
+
+	@Test
+	void 활동_항목이_1000건을_초과하면_전체_요청을_거부한다() {
+		ActivityEntryRequest validEntry = entry(
+			"2024-11-15 00:00:00", "2024-11-15 00:10:00", "1", "0.1", "1"
+		);
+
+		assertThatThrownBy(() -> normalizer.normalize(upload(
+			"SamsungHealth", Collections.nCopies(1_001, validEntry), "steps"
+		)))
+			.isInstanceOfSatisfying(BusinessException.class, exception ->
+				assertThat(exception.getErrorCode()).isEqualTo(ActivityErrorCode.ENTRIES_TOO_MANY)
 			);
 	}
 

@@ -26,6 +26,8 @@ public class ActivityInputNormalizer {
 
 	private static final int MAX_DECIMAL_PRECISION = 30;
 	private static final int MAX_DECIMAL_SCALE = 20;
+	// 1,000건은 청크 저장과 동시 업로드 탐색을 모두 통과한 일반 동기화 요청의 상한이다.
+	private static final int MAX_ACTIVITY_ENTRIES_PER_REQUEST = 1_000;
 	private static final DateTimeFormatter LOCAL_DATE_TIME_FORMATTER =
 		DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss");
 	private static final DateTimeFormatter OFFSET_DATE_TIME_FORMATTER = new DateTimeFormatterBuilder()
@@ -63,6 +65,9 @@ public class ActivityInputNormalizer {
 		}
 		if (request.data() == null || request.data().entries() == null) {
 			throw new BusinessException(ActivityErrorCode.INVALID_ENTRIES);
+		}
+		if (request.data().entries().size() > MAX_ACTIVITY_ENTRIES_PER_REQUEST) {
+			throw new BusinessException(ActivityErrorCode.ENTRIES_TOO_MANY);
 		}
 		if (request.data().source() == null || isBlank(request.data().source().name())) {
 			throw new BusinessException(ActivityErrorCode.INVALID_SOURCE);

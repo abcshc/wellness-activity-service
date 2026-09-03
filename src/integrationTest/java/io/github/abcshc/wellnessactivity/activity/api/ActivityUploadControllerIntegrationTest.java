@@ -11,6 +11,7 @@ import io.github.abcshc.wellnessactivity.auth.token.JwtTokenIssuer;
 import io.github.abcshc.wellnessactivity.member.entity.MemberEntity;
 import io.github.abcshc.wellnessactivity.member.repository.MemberRepository;
 import io.github.abcshc.wellnessactivity.support.MySqlTestContainerConfiguration;
+import java.util.Collections;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -133,6 +134,28 @@ class ActivityUploadControllerIntegrationTest {
 			.andExpect(status().isBadRequest())
 			.andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
 			.andExpect(jsonPath("$.path").value("/api/v1/activities/steps"));
+	}
+
+	@Test
+	void 활동_항목이_1000건을_초과하면_400_오류를_반환한다() throws Exception {
+		MemberEntity member = savedMember("too-many-entries@example.com");
+		String entries = String.join(",", Collections.nCopies(1_001, validEntry()));
+		String request = """
+			{
+			  "recordkey": "record-key-001",
+			  "data": {
+			    "source": {"name": "SamsungHealth"},
+			    "entries": [%s]
+			  }
+			}
+			""".formatted(entries);
+
+		mockMvc.perform(post("/api/v1/activities/steps")
+				.header(HttpHeaders.AUTHORIZATION, bearerToken(member))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(request))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("ACTIVITY_ENTRIES_TOO_MANY"));
 	}
 
 	@Test
