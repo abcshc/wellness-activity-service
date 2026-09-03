@@ -4,6 +4,7 @@ import io.github.abcshc.wellnessactivity.activity.entity.MemberActivityKeyEntity
 import io.github.abcshc.wellnessactivity.activity.error.ActivityErrorCode;
 import io.github.abcshc.wellnessactivity.activity.repository.MemberActivityKeyRepository;
 import io.github.abcshc.wellnessactivity.activity.repository.StepRecordBatchInsert;
+import io.github.abcshc.wellnessactivity.activity.repository.StepRecordBatchInsertResult;
 import io.github.abcshc.wellnessactivity.activity.repository.StepRecordBatchRepository;
 import io.github.abcshc.wellnessactivity.common.exception.BusinessException;
 import java.util.ArrayList;
@@ -52,9 +53,10 @@ public class ActivityUploadService {
 		int createdCount = 0;
 		for (int startIndex = 0; startIndex < inserts.size(); startIndex += STEP_RECORD_BATCH_SIZE) {
 			int endIndex = Math.min(startIndex + STEP_RECORD_BATCH_SIZE, inserts.size());
-			createdCount += stepRecordBatchRepository.insertIgnore(
+			StepRecordBatchInsertResult insertResult = stepRecordBatchRepository.insertIgnore(
 				memberActivityKey.getId(), command.provider(), inserts.subList(startIndex, endIndex)
 			);
+			createdCount += insertResult.createdCount();
 		}
 
 		return new ActivityUploadResult(

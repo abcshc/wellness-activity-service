@@ -13,6 +13,7 @@ import io.github.abcshc.wellnessactivity.activity.entity.MemberActivityKeyEntity
 import io.github.abcshc.wellnessactivity.activity.error.ActivityErrorCode;
 import io.github.abcshc.wellnessactivity.activity.repository.MemberActivityKeyRepository;
 import io.github.abcshc.wellnessactivity.activity.repository.StepRecordBatchInsert;
+import io.github.abcshc.wellnessactivity.activity.repository.StepRecordBatchInsertResult;
 import io.github.abcshc.wellnessactivity.activity.repository.StepRecordBatchRepository;
 import io.github.abcshc.wellnessactivity.common.exception.BusinessException;
 import io.github.abcshc.wellnessactivity.member.entity.MemberEntity;
@@ -38,7 +39,7 @@ class ActivityUploadServiceTest {
 	void 유효_항목을_저장하고_같은_요청의_중복_항목은_한번만_보존한다() {
 		MemberActivityKeyEntity activityKey = activityKey(1L);
 		when(memberActivityKeyRepository.findByRecordKey("record-key-001")).thenReturn(Optional.of(activityKey));
-		when(stepRecordBatchRepository.insertIgnore(any(), any(), any())).thenReturn(1);
+		when(stepRecordBatchRepository.insertIgnore(any(), any(), any())).thenReturn(batchResult(1));
 
 		ActivityUploadResult result = activityUploadService.upload(1L, normalizedInput(
 			List.of(recordAt(0), recordAt(0)),
@@ -58,7 +59,7 @@ class ActivityUploadServiceTest {
 	void 이미_저장된_같은_활동은_원본을_유지하고_무시한다() {
 		MemberActivityKeyEntity activityKey = activityKey(1L);
 		when(memberActivityKeyRepository.findByRecordKey("record-key-001")).thenReturn(Optional.of(activityKey));
-		when(stepRecordBatchRepository.insertIgnore(any(), any(), any())).thenReturn(0);
+		when(stepRecordBatchRepository.insertIgnore(any(), any(), any())).thenReturn(batchResult(0));
 
 		ActivityUploadResult result = activityUploadService.upload(1L, normalizedInput(List.of(recordAt(0)), List.of()));
 
@@ -70,7 +71,7 @@ class ActivityUploadServiceTest {
 	void 활동_201건은_200건과_1건의_청크로_나누어_저장한다() {
 		MemberActivityKeyEntity activityKey = activityKey(1L);
 		when(memberActivityKeyRepository.findByRecordKey("record-key-001")).thenReturn(Optional.of(activityKey));
-		when(stepRecordBatchRepository.insertIgnore(any(), any(), any())).thenReturn(200, 1);
+		when(stepRecordBatchRepository.insertIgnore(any(), any(), any())).thenReturn(batchResult(200), batchResult(1));
 
 		ActivityUploadResult result = activityUploadService.upload(1L, normalizedInput(
 			IntStream.range(0, 201).mapToObj(this::recordAt).toList(),
@@ -113,7 +114,7 @@ class ActivityUploadServiceTest {
 	void 원천_칼로리가_0인_새_활동은_추정값과_규칙_버전을_함께_저장한다() {
 		MemberActivityKeyEntity activityKey = activityKey(1L);
 		when(memberActivityKeyRepository.findByRecordKey("record-key-001")).thenReturn(Optional.of(activityKey));
-		when(stepRecordBatchRepository.insertIgnore(any(), any(), any())).thenReturn(1);
+		when(stepRecordBatchRepository.insertIgnore(any(), any(), any())).thenReturn(batchResult(1));
 
 		activityUploadService.upload(1L, normalizedInput(List.of(new NormalizedStepRecordCommand(
 			Instant.parse("2024-11-15T00:00:00Z"),
@@ -159,5 +160,20 @@ class ActivityUploadServiceTest {
 		MemberEntity member = Mockito.mock(MemberEntity.class);
 		when(member.getId()).thenReturn(memberId);
 		return new MemberActivityKeyEntity(member, "record-key-001");
+	}
+
+	private StepRecordBatchInsertResult batchResult(int createdCount) {
+		return new StepRecordBatchInsertResult(
+			IntStream.range(0, createdCount).mapToObj(this::batchInsertAt).toList(),
+			0
+		);
+	}
+
+	private StepRecordBatchInsert batchInsertAt(int index) {
+		NormalizedStepRecordCommand record = recordAt(index);
+		return new StepRecordBatchInsert(
+			record.startedAtUtc(), record.endedAtUtc(), record.steps(), record.distanceKm(), record.caloriesKcal(),
+			BigDecimal.ZERO, null
+		);
 	}
 }
