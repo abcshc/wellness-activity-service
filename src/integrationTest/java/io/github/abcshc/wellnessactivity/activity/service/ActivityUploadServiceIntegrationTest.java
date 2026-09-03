@@ -13,6 +13,7 @@ import io.github.abcshc.wellnessactivity.support.MySqlTestContainerConfiguration
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -33,6 +34,9 @@ class ActivityUploadServiceIntegrationTest {
 
 	@Autowired
 	private ActivityUploadService activityUploadService;
+
+	@Autowired
+	private ActivitySummaryService activitySummaryService;
 
 	@Autowired
 	private StepRecordRepository stepRecordRepository;
@@ -104,6 +108,42 @@ class ActivityUploadServiceIntegrationTest {
 			new DailySummaryRow(LocalDate.of(2024, 11, 14), decimal("50"), decimal("1"), decimal("5"), decimal("0")),
 			new DailySummaryRow(LocalDate.of(2024, 11, 15), decimal("50"), decimal("1"), decimal("5"), decimal("0"))
 		);
+	}
+
+	@Test
+	void 요청_내_중복과_재전송_뒤에도_DB_일별집계_Daily_Monthly가_한번만_반영된다() {
+		MemberEntity member = savedMember();
+		NormalizedStepRecordCommand record = new NormalizedStepRecordCommand(
+			Instant.parse("2024-11-14T14:30:00Z"),
+			Instant.parse("2024-11-14T15:30:00Z"),
+			new BigDecimal("100"), new BigDecimal("2"), new BigDecimal("10")
+		);
+		ActivityInputNormalizationResult input = input("record-key-duplicate", record, record);
+
+		ActivityUploadResult first = activityUploadService.upload(member.getId(), input);
+		ActivityUploadResult retry = activityUploadService.upload(member.getId(), input);
+		var activityKey = memberActivityKeyRepository.findByRecordKey("record-key-duplicate").orElseThrow();
+
+		assertThat(first.createdCount()).isEqualTo(1);
+		assertThat(first.ignoredCount()).isEqualTo(1);
+		assertThat(retry.createdCount()).isZero();
+		assertThat(retry.ignoredCount()).isEqualTo(2);
+		assertThat(stepRecordRepository.count()).isEqualTo(1);
+		assertThat(dailySummaries(activityKey.getId())).containsExactly(
+			new DailySummaryRow(LocalDate.of(2024, 11, 14), decimal("50"), decimal("1"), decimal("5"), decimal("0")),
+			new DailySummaryRow(LocalDate.of(2024, 11, 15), decimal("50"), decimal("1"), decimal("5"), decimal("0"))
+		);
+		assertThat(activitySummaryService.summarizeDaily(
+			activityKey, LocalDate.of(2024, 11, 14), LocalDate.of(2024, 11, 15)
+		)).containsExactly(
+			new DailyActivitySummary(LocalDate.of(2024, 11, 14), decimal("50"), decimal("1"), decimal("5")),
+			new DailyActivitySummary(LocalDate.of(2024, 11, 15), decimal("50"), decimal("1"), decimal("5"))
+		);
+		assertThat(activitySummaryService.summarizeMonthly(
+			activityKey, YearMonth.of(2024, 11), YearMonth.of(2024, 11)
+		)).containsExactly(new MonthlyActivitySummary(
+			YearMonth.of(2024, 11), decimal("100"), decimal("2"), decimal("10")
+		));
 	}
 
 	@Test

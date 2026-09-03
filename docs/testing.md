@@ -50,13 +50,14 @@
 
 `StepRecordBatchRepositoryIntegrationTest`는 집계 갱신에 필요한 원본 저장 결과 계약을 검증합니다. JDBC prepared batch의 항목별 결과에서 실제 신규 항목만 원래 입력 순서대로 반환하고, 유니크 충돌 항목은 중복 건수로 구분해야 합니다. 항목별 결과를 제공하지 않는 드라이버 응답은 저장 계층에서 실패로 처리해, 어떤 항목이 신규인지 알 수 없는 상태로 이후 집계를 갱신하지 않습니다.
 
-`ActivityUploadServiceIntegrationTest`는 자정 경계 원본 이벤트를 업로드한 뒤 KST 날짜별 집계가 올바르게 나뉘어 저장되는지, 같은 이벤트를 재전송해도 일별 집계가 증가하지 않는지 확인합니다. `ActivityUploadTransactionIntegrationTest`는 일별 집계 갱신을 의도적으로 실패시켜 원본 이벤트와 활동 키 생성까지 함께 rollback되는지 실제 MySQL 트랜잭션으로 검증합니다.
+`ActivityUploadServiceIntegrationTest`는 자정 경계 원본 이벤트를 업로드한 뒤 KST 날짜별 집계가 올바르게 나뉘어 저장되는지 확인합니다. 요청 안의 중복과 동일 요청 재전송 뒤에도 원본 행, 일별 집계, Daily·Monthly 결과가 각각 한 번만 반영되는지를 함께 검증합니다. `ActivityUploadTransactionIntegrationTest`는 일별 집계 갱신을 의도적으로 실패시켜 원본 이벤트·활동 키·일별 집계 행이 함께 rollback되는지 실제 MySQL 트랜잭션으로 검증합니다.
 
 ## 동시 업로드 정합성
 
 `ActivityUploadConcurrencyIntegrationTest`는 두 업로드 작업을 같은 시작 장벽에서 실행해 실제 MySQL 경합을 만듭니다. 각 요청은 201개 항목으로 구성되어 200건 청크 경계도 함께 검증합니다.
 
-- 같은 회원·같은 `recordkey`·같은 201건 묶음을 동시에 전송하면, 두 응답의 `createdCount` 합계는 201이고 `ignoredCount` 합계도 201입니다. 최종 원본 행 수와 Daily·Monthly 집계도 201건 기준으로 한 번만 반영됩니다.
+- 같은 회원·같은 `recordkey`·같은 201건 묶음을 동시에 전송하면, 두 응답의 `createdCount` 합계는 201이고 `ignoredCount` 합계도 201입니다. 최종 원본 행 수와 `daily_activity_summaries` 행, Daily·Monthly 결과도 201건 기준으로 한 번만 반영됩니다.
+- 같은 회원·같은 `recordkey`·같은 KST 날짜에 서로 다른 201건 묶음 두 개를 동시에 전송하면, 두 묶음은 모두 원본으로 저장되고 하나의 일별 집계 행에 원자적으로 합산됩니다. 이 검증은 중복 방지와 별개로 같은 집계 행의 동시 갱신을 확인합니다.
 - 서로 다른 회원과 서로 다른 `recordkey`의 201건 신규 업로드를 동시에 전송하면, 두 요청 모두 201건을 생성합니다. 이후 각 `recordkey`의 Daily·Monthly 집계가 서로 섞이지 않는지 확인합니다.
 
 이 테스트는 특정 동시 사용자 수에서의 응답 시간이나 처리량을 측정하지 않습니다. 경합이 있어도 저장 결과와 집계가 일관되는지 확인하는 통합 테스트입니다.

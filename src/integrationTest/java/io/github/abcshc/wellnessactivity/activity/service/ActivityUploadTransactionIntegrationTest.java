@@ -26,6 +26,7 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 @SpringBootTest(classes = WellnessActivityServiceApplication.class)
 @Import({MySqlTestContainerConfiguration.class, ActivityUploadTransactionIntegrationTest.FailingDailySummaryConfiguration.class})
@@ -42,6 +43,9 @@ class ActivityUploadTransactionIntegrationTest {
 
 	@Autowired
 	private MemberRepository memberRepository;
+
+	@Autowired
+	private JdbcTemplate jdbcTemplate;
 
 	@AfterEach
 	void tearDown() {
@@ -62,6 +66,7 @@ class ActivityUploadTransactionIntegrationTest {
 
 		assertThat(stepRecordRepository.count()).isZero();
 		assertThat(memberActivityKeyRepository.findByRecordKey("record-key-transaction")).isEmpty();
+		assertThat(jdbcTemplate.queryForObject("select count(*) from daily_activity_summaries", Long.class)).isZero();
 	}
 
 	private ActivityInputNormalizationResult input() {

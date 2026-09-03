@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 @SpringBootTest(classes = WellnessActivityServiceApplication.class)
 @Import(MySqlTestContainerConfiguration.class)
@@ -55,6 +56,9 @@ class ActivityUploadConcurrencyIntegrationTest {
 	@Autowired
 	private MemberRepository memberRepository;
 
+	@Autowired
+	private JdbcTemplate jdbcTemplate;
+
 	@AfterEach
 	void tearDown() {
 		stepRecordRepository.deleteAll();
@@ -79,6 +83,23 @@ class ActivityUploadConcurrencyIntegrationTest {
 
 		MemberActivityKeyEntity key = memberActivityKeyRepository.findByRecordKey("record-key-same").orElseThrow();
 		assertSummaries(key, "201", "20.1", "201");
+	}
+
+	@Test
+	void 같은_recordkey와_날짜의_서로_다른_신규_이벤트는_하나의_일별_집계에_원자적으로_합산된다() throws Exception {
+		MemberEntity member = savedMember("same-key@example.com", "동일키");
+
+		List<ActivityUploadResult> results = runConcurrently(
+			() -> activityUploadService.upload(member.getId(), input("record-key-atomic", "1", "0.1", "1", 0)),
+			() -> activityUploadService.upload(member.getId(), input("record-key-atomic", "2", "0.2", "2", 3_600))
+		);
+
+		assertThat(results).extracting(ActivityUploadResult::createdCount).containsOnly(RECORD_COUNT);
+		assertThat(results).extracting(ActivityUploadResult::ignoredCount).containsOnly(0);
+		assertThat(stepRecordRepository.count()).isEqualTo(RECORD_COUNT * 2L);
+
+		MemberActivityKeyEntity key = memberActivityKeyRepository.findByRecordKey("record-key-atomic").orElseThrow();
+		assertSummaries(key, "603", "60.3", "603");
 	}
 
 	@Test
@@ -129,6 +150,9 @@ class ActivityUploadConcurrencyIntegrationTest {
 	}
 
 	private void assertSummaries(MemberActivityKeyEntity key, String steps, String distance, String calories) {
+		assertThat(storedDailySummaries(key.getId())).containsExactly(
+			new StoredDailySummary(SUMMARY_DATE, decimal(steps), decimal(distance), decimal(calories), BigDecimal.ZERO)
+		);
 		assertThat(activitySummaryService.summarizeDaily(key, SUMMARY_DATE, SUMMARY_DATE)).containsExactly(
 			new DailyActivitySummary(SUMMARY_DATE, decimal(steps), decimal(distance), decimal(calories))
 		);
@@ -137,13 +161,42 @@ class ActivityUploadConcurrencyIntegrationTest {
 		);
 	}
 
+	private List<StoredDailySummary> storedDailySummaries(Long activityKeyId) {
+		return jdbcTemplate.query(
+			"""
+				select activity_date, steps, distance_km, source_calories_kcal, estimated_calories_kcal
+				from daily_activity_summaries
+				where member_activity_key_id = ?
+				order by activity_date
+				""",
+			(resultSet, rowNum) -> new StoredDailySummary(
+				resultSet.getObject("activity_date", LocalDate.class),
+				resultSet.getBigDecimal("steps"),
+				resultSet.getBigDecimal("distance_km"),
+				resultSet.getBigDecimal("source_calories_kcal"),
+				resultSet.getBigDecimal("estimated_calories_kcal")
+			),
+			activityKeyId
+		);
+	}
+
 	private MemberEntity savedMember(String email, String nickname) {
 		return memberRepository.saveAndFlush(new MemberEntity("동시테스트", nickname, email, "password-hash"));
 	}
 
 	private ActivityInputNormalizationResult input(String recordKey, String steps, String distanceKm, String caloriesKcal) {
+		return input(recordKey, steps, distanceKm, caloriesKcal, 0);
+	}
+
+	private ActivityInputNormalizationResult input(
+		String recordKey,
+		String steps,
+		String distanceKm,
+		String caloriesKcal,
+		int offsetSeconds
+	) {
 		List<NormalizedStepRecordCommand> records = IntStream.range(0, RECORD_COUNT)
-			.mapToObj(index -> record(index, steps, distanceKm, caloriesKcal))
+			.mapToObj(index -> record(index + offsetSeconds, steps, distanceKm, caloriesKcal))
 			.toList();
 		return new ActivityInputNormalizationResult(
 			new ActivityUploadCommand(recordKey, ActivityProvider.SAMSUNG_HEALTH, records),
@@ -160,5 +213,20 @@ class ActivityUploadConcurrencyIntegrationTest {
 
 	private BigDecimal decimal(String value) {
 		return new BigDecimal(value);
+	}
+
+	private record StoredDailySummary(
+		LocalDate activityDate,
+		BigDecimal steps,
+		BigDecimal distanceKm,
+		BigDecimal sourceCaloriesKcal,
+		BigDecimal estimatedCaloriesKcal
+	) {
+		private StoredDailySummary {
+			steps = steps.stripTrailingZeros();
+			distanceKm = distanceKm.stripTrailingZeros();
+			sourceCaloriesKcal = sourceCaloriesKcal.stripTrailingZeros();
+			estimatedCaloriesKcal = estimatedCaloriesKcal.stripTrailingZeros();
+		}
 	}
 }
