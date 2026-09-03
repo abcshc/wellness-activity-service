@@ -1,5 +1,6 @@
 package io.github.abcshc.wellnessactivity.activity;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -142,6 +143,54 @@ class ActivityWorkflowIntegrationTest {
 			.andExpect(jsonPath("$.code").value("ACTIVITY_RECORD_KEY_FORBIDDEN"));
 	}
 
+	@Test
+	void KST_경계_fixture는_실제_업로드_뒤_Daily와_Monthly_합계를_보존한다() throws Exception {
+		register("boundary@example.com");
+		String accessToken = login("boundary@example.com");
+
+		mockMvc.perform(post("/api/v1/activities/steps")
+				.header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(kstBoundaryActivityUploadRequest()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.totalCount").value(3))
+			.andExpect(jsonPath("$.createdCount").value(3))
+			.andExpect(jsonPath("$.invalidCount").value(0));
+
+		assertThat(stepRecordRepository.count()).isEqualTo(3);
+		assertThat(dailyActivitySummaryRepository.count()).isEqualTo(3);
+
+		mockMvc.perform(get("/api/v1/activities/steps/daily")
+				.header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
+				.param("recordkey", "record-key-kst-boundary")
+				.param("from", "2024-11-14")
+				.param("to", "2024-11-16"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$[0].date").value("2024-11-14"))
+			.andExpect(jsonPath("$[0].steps").value(62))
+			.andExpect(jsonPath("$[0].distanceKm").value(2.2))
+			.andExpect(jsonPath("$[0].caloriesKcal").value(7.4))
+			.andExpect(jsonPath("$[1].date").value("2024-11-15"))
+			.andExpect(jsonPath("$[1].steps").value(86))
+			.andExpect(jsonPath("$[1].distanceKm").value(3.52))
+			.andExpect(jsonPath("$[1].caloriesKcal").value(11))
+			.andExpect(jsonPath("$[2].date").value("2024-11-16"))
+			.andExpect(jsonPath("$[2].steps").value(12))
+			.andExpect(jsonPath("$[2].distanceKm").value(1.2))
+			.andExpect(jsonPath("$[2].caloriesKcal").value(2.4));
+
+		mockMvc.perform(get("/api/v1/activities/steps/monthly")
+				.header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
+				.param("recordkey", "record-key-kst-boundary")
+				.param("from", "2024-11")
+				.param("to", "2024-11"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$[0].month").value("2024-11"))
+			.andExpect(jsonPath("$[0].steps").value(160))
+			.andExpect(jsonPath("$[0].distanceKm").value(6.92))
+			.andExpect(jsonPath("$[0].caloriesKcal").value(20.8));
+	}
+
 	private void register(String email) throws Exception {
 		mockMvc.perform(post("/api/v1/members")
 				.contentType(MediaType.APPLICATION_JSON)
@@ -202,6 +251,37 @@ class ActivityWorkflowIntegrationTest {
 			        "steps": 1,
 			        "distance": {"unit": "km", "value": 0.01},
 			        "calories": {"unit": "kcal", "value": 0.1}
+			      }
+			    ]
+			  }
+			}
+		""";
+	}
+
+	private String kstBoundaryActivityUploadRequest() {
+		return """
+			{
+			  "recordkey": "record-key-kst-boundary",
+			  "data": {
+			    "source": {"name": "SamsungHealth"},
+			    "entries": [
+			      {
+			        "period": {"from": "2024-11-14T12:00:00+0900", "to": "2024-11-16T12:00:00+0900"},
+			        "steps": 48,
+			        "distance": {"unit": "km", "value": 4.8},
+			        "calories": {"unit": "kcal", "value": 9.6}
+			      },
+			      {
+			        "period": {"from": "2024-11-15T00:00:00+0900", "to": "2024-11-15T00:00:00+0900"},
+			        "steps": 12,
+			        "distance": {"unit": "km", "value": 0.12},
+			        "calories": {"unit": "kcal", "value": 1.2}
+			      },
+			      {
+			        "period": {"from": "2024-11-14T23:30:00+0900", "to": "2024-11-15T00:30:00+0900"},
+			        "steps": 100,
+			        "distance": {"unit": "km", "value": 2},
+			        "calories": {"unit": "kcal", "value": 10}
 			      }
 			    ]
 			  }
