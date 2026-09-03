@@ -50,6 +50,8 @@
 
 `StepRecordBatchRepositoryIntegrationTest`는 집계 갱신에 필요한 원본 저장 결과 계약을 검증합니다. JDBC prepared batch의 항목별 결과에서 실제 신규 항목만 원래 입력 순서대로 반환하고, 유니크 충돌 항목은 중복 건수로 구분해야 합니다. 항목별 결과를 제공하지 않는 드라이버 응답은 저장 계층에서 실패로 처리해, 어떤 항목이 신규인지 알 수 없는 상태로 이후 집계를 갱신하지 않습니다.
 
+`ActivityUploadServiceIntegrationTest`는 자정 경계 원본 이벤트를 업로드한 뒤 KST 날짜별 집계가 올바르게 나뉘어 저장되는지, 같은 이벤트를 재전송해도 일별 집계가 증가하지 않는지 확인합니다. `ActivityUploadTransactionIntegrationTest`는 일별 집계 갱신을 의도적으로 실패시켜 원본 이벤트와 활동 키 생성까지 함께 rollback되는지 실제 MySQL 트랜잭션으로 검증합니다.
+
 ## 동시 업로드 정합성
 
 `ActivityUploadConcurrencyIntegrationTest`는 두 업로드 작업을 같은 시작 장벽에서 실행해 실제 MySQL 경합을 만듭니다. 각 요청은 201개 항목으로 구성되어 200건 청크 경계도 함께 검증합니다.

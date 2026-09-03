@@ -6,6 +6,7 @@ import io.github.abcshc.wellnessactivity.WellnessActivityServiceApplication;
 import io.github.abcshc.wellnessactivity.activity.entity.ActivityProvider;
 import io.github.abcshc.wellnessactivity.activity.entity.MemberActivityKeyEntity;
 import io.github.abcshc.wellnessactivity.activity.repository.MemberActivityKeyRepository;
+import io.github.abcshc.wellnessactivity.activity.repository.DailyActivitySummaryRepository;
 import io.github.abcshc.wellnessactivity.activity.repository.StepRecordRepository;
 import io.github.abcshc.wellnessactivity.member.entity.MemberEntity;
 import io.github.abcshc.wellnessactivity.member.repository.MemberRepository;
@@ -46,6 +47,9 @@ class ActivityUploadConcurrencyIntegrationTest {
 	private StepRecordRepository stepRecordRepository;
 
 	@Autowired
+	private DailyActivitySummaryRepository dailyActivitySummaryRepository;
+
+	@Autowired
 	private MemberActivityKeyRepository memberActivityKeyRepository;
 
 	@Autowired
@@ -54,6 +58,7 @@ class ActivityUploadConcurrencyIntegrationTest {
 	@AfterEach
 	void tearDown() {
 		stepRecordRepository.deleteAll();
+		dailyActivitySummaryRepository.deleteAll();
 		memberActivityKeyRepository.deleteAll();
 		memberRepository.deleteAll();
 	}

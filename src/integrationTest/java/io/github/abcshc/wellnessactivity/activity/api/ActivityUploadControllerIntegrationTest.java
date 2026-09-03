@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import io.github.abcshc.wellnessactivity.WellnessActivityServiceApplication;
 import io.github.abcshc.wellnessactivity.activity.repository.MemberActivityKeyRepository;
+import io.github.abcshc.wellnessactivity.activity.repository.DailyActivitySummaryRepository;
 import io.github.abcshc.wellnessactivity.activity.repository.StepRecordRepository;
 import io.github.abcshc.wellnessactivity.auth.token.JwtTokenIssuer;
 import io.github.abcshc.wellnessactivity.member.entity.MemberEntity;
@@ -42,9 +43,13 @@ class ActivityUploadControllerIntegrationTest {
 	@Autowired
 	private StepRecordRepository stepRecordRepository;
 
+	@Autowired
+	private DailyActivitySummaryRepository dailyActivitySummaryRepository;
+
 	@AfterEach
 	void tearDown() {
 		stepRecordRepository.deleteAll();
+		dailyActivitySummaryRepository.deleteAll();
 		memberActivityKeyRepository.deleteAll();
 		memberRepository.deleteAll();
 	}

@@ -3,14 +3,17 @@ package io.github.abcshc.wellnessactivity.activity.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.github.abcshc.wellnessactivity.activity.entity.ActivityProvider;
 import io.github.abcshc.wellnessactivity.activity.entity.MemberActivityKeyEntity;
 import io.github.abcshc.wellnessactivity.activity.error.ActivityErrorCode;
+import io.github.abcshc.wellnessactivity.activity.repository.DailyActivitySummaryRepository;
 import io.github.abcshc.wellnessactivity.activity.repository.MemberActivityKeyRepository;
 import io.github.abcshc.wellnessactivity.activity.repository.StepRecordBatchInsert;
 import io.github.abcshc.wellnessactivity.activity.repository.StepRecordBatchInsertResult;
@@ -19,6 +22,7 @@ import io.github.abcshc.wellnessactivity.common.exception.BusinessException;
 import io.github.abcshc.wellnessactivity.member.entity.MemberEntity;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.IntStream;
@@ -30,9 +34,13 @@ class ActivityUploadServiceTest {
 
 	private final MemberActivityKeyRepository memberActivityKeyRepository = Mockito.mock(MemberActivityKeyRepository.class);
 	private final StepRecordBatchRepository stepRecordBatchRepository = Mockito.mock(StepRecordBatchRepository.class);
+	private final DailyActivityContributionAllocator dailyActivityContributionAllocator = new DailyActivityContributionAllocator();
+	private final DailyActivitySummaryRepository dailyActivitySummaryRepository = Mockito.mock(DailyActivitySummaryRepository.class);
 	private final ActivityUploadService activityUploadService = new ActivityUploadService(
 		memberActivityKeyRepository,
-		stepRecordBatchRepository
+		stepRecordBatchRepository,
+		dailyActivityContributionAllocator,
+		dailyActivitySummaryRepository
 	);
 
 	@Test
@@ -48,6 +56,10 @@ class ActivityUploadServiceTest {
 
 		verify(stepRecordBatchRepository).insertIgnore(any(), any(), any());
 		verify(memberActivityKeyRepository).insertIgnore(1L, "record-key-001");
+		verify(dailyActivitySummaryRepository).upsert(
+			any(), eq(LocalDate.of(2024, 11, 15)), eq(new BigDecimal("32")),
+			eq(new BigDecimal("0.02422")), eq(new BigDecimal("1.21")), eq(BigDecimal.ZERO)
+		);
 		assertThat(result.totalCount()).isEqualTo(3);
 		assertThat(result.createdCount()).isEqualTo(1);
 		assertThat(result.ignoredCount()).isEqualTo(1);
@@ -65,6 +77,7 @@ class ActivityUploadServiceTest {
 
 		assertThat(result.createdCount()).isZero();
 		assertThat(result.ignoredCount()).isEqualTo(1);
+		verifyNoInteractions(dailyActivitySummaryRepository);
 	}
 
 	@Test

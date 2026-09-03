@@ -9,6 +9,7 @@ import io.github.abcshc.wellnessactivity.activity.entity.ActivityProvider;
 import io.github.abcshc.wellnessactivity.activity.entity.MemberActivityKeyEntity;
 import io.github.abcshc.wellnessactivity.activity.entity.StepRecordEntity;
 import io.github.abcshc.wellnessactivity.activity.repository.MemberActivityKeyRepository;
+import io.github.abcshc.wellnessactivity.activity.repository.DailyActivitySummaryRepository;
 import io.github.abcshc.wellnessactivity.activity.repository.StepRecordRepository;
 import io.github.abcshc.wellnessactivity.auth.token.JwtTokenIssuer;
 import io.github.abcshc.wellnessactivity.member.entity.MemberEntity;
@@ -48,9 +49,13 @@ class ActivitySummaryControllerIntegrationTest {
 	@Autowired
 	private StepRecordRepository stepRecordRepository;
 
+	@Autowired
+	private DailyActivitySummaryRepository dailyActivitySummaryRepository;
+
 	@AfterEach
 	void tearDown() {
 		stepRecordRepository.deleteAll();
+		dailyActivitySummaryRepository.deleteAll();
 		memberActivityKeyRepository.deleteAll();
 		memberRepository.deleteAll();
 	}

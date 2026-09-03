@@ -2,6 +2,7 @@ package io.github.abcshc.wellnessactivity.activity.service;
 
 import io.github.abcshc.wellnessactivity.activity.entity.MemberActivityKeyEntity;
 import io.github.abcshc.wellnessactivity.activity.error.ActivityErrorCode;
+import io.github.abcshc.wellnessactivity.activity.repository.DailyActivitySummaryRepository;
 import io.github.abcshc.wellnessactivity.activity.repository.MemberActivityKeyRepository;
 import io.github.abcshc.wellnessactivity.activity.repository.StepRecordBatchInsert;
 import io.github.abcshc.wellnessactivity.activity.repository.StepRecordBatchInsertResult;
@@ -20,13 +21,19 @@ public class ActivityUploadService {
 
 	private final MemberActivityKeyRepository memberActivityKeyRepository;
 	private final StepRecordBatchRepository stepRecordBatchRepository;
+	private final DailyActivityContributionAllocator dailyActivityContributionAllocator;
+	private final DailyActivitySummaryRepository dailyActivitySummaryRepository;
 
 	public ActivityUploadService(
 		MemberActivityKeyRepository memberActivityKeyRepository,
-		StepRecordBatchRepository stepRecordBatchRepository
+		StepRecordBatchRepository stepRecordBatchRepository,
+		DailyActivityContributionAllocator dailyActivityContributionAllocator,
+		DailyActivitySummaryRepository dailyActivitySummaryRepository
 	) {
 		this.memberActivityKeyRepository = memberActivityKeyRepository;
 		this.stepRecordBatchRepository = stepRecordBatchRepository;
+		this.dailyActivityContributionAllocator = dailyActivityContributionAllocator;
+		this.dailyActivitySummaryRepository = dailyActivitySummaryRepository;
 	}
 
 	@Transactional
@@ -50,6 +57,7 @@ public class ActivityUploadService {
 		}
 
 		List<StepRecordBatchInsert> inserts = toBatchInserts(command.records());
+		List<StepRecordBatchInsert> insertedRecords = new ArrayList<>();
 		int createdCount = 0;
 		for (int startIndex = 0; startIndex < inserts.size(); startIndex += STEP_RECORD_BATCH_SIZE) {
 			int endIndex = Math.min(startIndex + STEP_RECORD_BATCH_SIZE, inserts.size());
@@ -57,7 +65,9 @@ public class ActivityUploadService {
 				memberActivityKey.getId(), command.provider(), inserts.subList(startIndex, endIndex)
 			);
 			createdCount += insertResult.createdCount();
+			insertedRecords.addAll(insertResult.insertedRecords());
 		}
+		persistDailyContributions(memberActivityKey.getId(), insertedRecords);
 
 		return new ActivityUploadResult(
 			command.records().size() + normalizationResult.invalidEntries().size(),
@@ -65,6 +75,19 @@ public class ActivityUploadService {
 			command.records().size() - createdCount,
 			normalizationResult.invalidEntries().size(),
 			normalizationResult.invalidEntries()
+		);
+	}
+
+	private void persistDailyContributions(Long memberActivityKeyId, List<StepRecordBatchInsert> insertedRecords) {
+		dailyActivityContributionAllocator.allocateAndMerge(insertedRecords).values().forEach(contribution ->
+			dailyActivitySummaryRepository.upsert(
+				memberActivityKeyId,
+				contribution.activityDate(),
+				contribution.steps(),
+				contribution.distanceKm(),
+				contribution.sourceCaloriesKcal(),
+				contribution.estimatedCaloriesKcal()
+			)
 		);
 	}
 

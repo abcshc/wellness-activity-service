@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import io.github.abcshc.wellnessactivity.WellnessActivityServiceApplication;
 import io.github.abcshc.wellnessactivity.activity.repository.MemberActivityKeyRepository;
+import io.github.abcshc.wellnessactivity.activity.repository.DailyActivitySummaryRepository;
 import io.github.abcshc.wellnessactivity.activity.repository.StepRecordRepository;
 import io.github.abcshc.wellnessactivity.auth.token.repository.RefreshTokenRepository;
 import io.github.abcshc.wellnessactivity.member.repository.MemberRepository;
@@ -39,6 +40,9 @@ class ActivityWorkflowIntegrationTest {
 	private StepRecordRepository stepRecordRepository;
 
 	@Autowired
+	private DailyActivitySummaryRepository dailyActivitySummaryRepository;
+
+	@Autowired
 	private MemberActivityKeyRepository memberActivityKeyRepository;
 
 	@Autowired
@@ -59,6 +63,7 @@ class ActivityWorkflowIntegrationTest {
 
 	private void clearDatabase() {
 		stepRecordRepository.deleteAll();
+		dailyActivitySummaryRepository.deleteAll();
 		memberActivityKeyRepository.deleteAll();
 		refreshTokenRepository.deleteAll();
 		memberRepository.deleteAll();
