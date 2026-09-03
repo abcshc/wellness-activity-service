@@ -67,9 +67,9 @@ caloriesKcal = sourceCaloriesKcal + estimatedCaloriesKcal
 
 현재 입력은 일반 활동의 걸음 수를 10분 단위로 집계한 데이터이므로, 체중·실제 연속 보행 시간·속도·경사 같은 복잡한 조건은 fallback에 포함하지 않습니다. 따라서 계단·등산·달리기·운동 세션을 구분하거나, 의료·영양 처방 또는 개인별 정확한 에너지 소비량을 산출하는 기능으로 사용하지 않습니다. 실제 연동에서는 HealthKit의 [`activeEnergyBurned`](https://developer.apple.com/documentation/healthkit/hkquantitytypeidentifier/activeenergyburned)나 Health Connect의 [`ActiveCaloriesBurnedRecord`](https://developer.android.com/reference/androidx/health/connect/client/records/ActiveCaloriesBurnedRecord)처럼 원천이 제공하는 활동 에너지를 우선합니다.
 
-서버는 데이터 스트림과 UTC 시간 범위를 조건으로 사용하므로, 날짜별·월별 조회에서 활동 시각 열에 시간대 변환 함수를 적용하지 않습니다. 실제 조회량에서 병목이 확인될 때만 파생 집계 또는 캐시를 검토합니다.
+한국 시간의 일자 또는 월 경계를 넘는 활동 구간은 겹치는 시간 비율대로 `steps`, `calories`, `distance`를 나눠 각 KST 일자에 반영합니다. 시작·종료 시각이 같은 구간은 나눌 수 없으므로 시작일에 전량 반영합니다. 이 배분은 원본 이벤트가 새로 저장될 때 한 번 수행하며, 원본을 변경하지 않습니다. 전체 구간의 기여값 합계가 원본 측정값과 같도록 마지막 날짜에 소수점 잔여값을 반영합니다.
 
-한국 시간의 일자 또는 월 경계를 넘는 활동 구간은 겹치는 시간 비율대로 `steps`, `calories`, `distance`를 나눠 각 결과 기간에 반영합니다. 시작·종료 시각이 같은 구간은 나눌 수 없으므로 시작일에 전량 반영합니다. 배분 계산은 원본을 변경하지 않고 조회 시 수행하며, 전체 구간을 조회하면 각 배분값의 합계가 원본 측정값과 같도록 마지막 구간에 소수점 잔여값을 반영합니다.
+조회 시에는 활동 시각 열에 시간대 변환 함수나 원본 이벤트 전체 집계를 적용하지 않습니다. Daily는 요청 범위의 일별 집계 행을 읽고 빈 날짜를 `0`으로 채우며, Monthly는 같은 일별 집계 행을 KST 월 단위로 합산합니다.
 
 ## 사용자 구분 키와 중복 수집
 

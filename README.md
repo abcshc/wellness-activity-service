@@ -16,11 +16,12 @@
 - 이메일·비밀번호 로그인, Refresh Token 회전, 로그아웃
 - 활동 데이터 업로드와 항목별 부분 성공 응답
 - `recordkey` 소유권 확인과 원본 이벤트 멱등 저장
-- KST 기준 Daily·Monthly 활동 요약 조회
+- 원본 저장과 같은 트랜잭션으로 갱신하는 KST 일별 집계
+- 일별 집계를 읽는 Daily·Monthly 활동 요약 조회
 
 활동 데이터의 입력 정규화, 시간대·집계 기준, API 계약은 [건강활동 데이터 기능 명세](docs/features/activity-data.md)에서 확인할 수 있습니다.
 
-비식별 검증 입력을 실제 API로 처리한 1차 결과는 [건강활동 입력 검증 결과](docs/submission/activity-results.md)에서 확인할 수 있습니다. 이 결과는 원본 저장·재전송 멱등성·Daily·Monthly 집계 정합성을 포함합니다. 요청 크기와 동시성 검증은 [건강활동 업로드 부하 탐색 결과](docs/submission/load-test-results.md)에서 확인할 수 있습니다.
+비식별 검증 입력을 실제 API로 처리한 1차 결과는 [건강활동 입력 검증 결과](docs/submission/activity-results.md)에서 확인할 수 있습니다. 이 결과는 원본 저장·재전송 멱등성·KST 일별 집계·Daily·Monthly 조회 정합성을 포함합니다. 요청 크기와 동시성 검증의 범위와 실행 방법은 [건강활동 업로드 검증 방법](docs/submission/load-test-results.md)에서 확인할 수 있습니다.
 
 ## 기술 방향
 
@@ -85,4 +86,4 @@ Docker가 실행 중인 환경에서는 Testcontainers 기반 MySQL 통합 테�
 - [현재 데이터 모델](docs/data-model.md)
 - [데이터베이스 마이그레이션](docs/database-migration.md)
 - [테스트 전략](docs/testing.md)
-- [건강활동 업로드 부하 탐색 결과](docs/submission/load-test-results.md)
+- [건강활동 업로드 검증 방법](docs/submission/load-test-results.md)
