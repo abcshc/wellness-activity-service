@@ -20,8 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class LoginService {
 
-	private static final long REFRESH_TOKEN_TTL_DAYS = 14;
-
 	private final MemberRepository memberRepository;
 	private final RefreshTokenRepository refreshTokenRepository;
 	private final PasswordHasher passwordHasher;
@@ -63,7 +61,7 @@ public class LoginService {
 			refreshTokenHasher.hash(refreshToken),
 			UUID.randomUUID().toString(),
 			issuedAt,
-			issuedAt.plus(REFRESH_TOKEN_TTL_DAYS, ChronoUnit.DAYS)
+			issuedAt.plus(RefreshTokenService.REFRESH_TOKEN_TTL)
 		);
 		refreshTokenRepository.save(refreshTokenEntity);
 

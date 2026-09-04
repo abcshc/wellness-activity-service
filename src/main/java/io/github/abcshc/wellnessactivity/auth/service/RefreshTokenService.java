@@ -7,6 +7,7 @@ import io.github.abcshc.wellnessactivity.auth.token.RefreshTokenStatus;
 import io.github.abcshc.wellnessactivity.auth.token.entity.RefreshTokenEntity;
 import io.github.abcshc.wellnessactivity.auth.token.repository.RefreshTokenRepository;
 import io.github.abcshc.wellnessactivity.common.exception.BusinessException;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import org.springframework.stereotype.Service;
@@ -15,7 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class RefreshTokenService {
 
-	private static final long REFRESH_TOKEN_TTL_DAYS = 14;
+	static final Duration REFRESH_TOKEN_TTL = Duration.ofDays(14);
 
 	private final RefreshTokenRepository refreshTokenRepository;
 	private final JwtTokenIssuer jwtTokenIssuer;
@@ -58,7 +59,7 @@ public class RefreshTokenService {
 			refreshTokenHasher.hash(nextRefreshToken),
 			currentToken.getFamilyId(),
 			now,
-			now.plus(REFRESH_TOKEN_TTL_DAYS, ChronoUnit.DAYS)
+			now.plus(REFRESH_TOKEN_TTL)
 		);
 		refreshTokenRepository.save(replacementToken);
 		if (refreshTokenRepository.rotateActiveToken(
