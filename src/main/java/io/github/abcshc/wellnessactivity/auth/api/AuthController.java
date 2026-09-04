@@ -15,13 +15,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/auth")
-public class LoginController {
+public class AuthController {
 
 	private final LoginService loginService;
 	private final RefreshTokenService refreshTokenService;
 	private final LogoutService logoutService;
 
-	public LoginController(
+	public AuthController(
 		LoginService loginService,
 		RefreshTokenService refreshTokenService,
 		LogoutService logoutService
