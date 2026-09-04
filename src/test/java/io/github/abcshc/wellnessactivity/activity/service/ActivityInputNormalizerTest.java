@@ -134,6 +134,34 @@ class ActivityInputNormalizerTest {
 	}
 
 	@Test
+	void 잘못된_일시와_데이터베이스_정밀도_범위를_벗어난_수치는_항목별로_제외한다() {
+		ActivityInputNormalizationResult result = normalizer.normalize(upload(
+			"SamsungHealth",
+			List.of(
+				entry(
+					"2024-11-15 00:00:00", "2024-11-15 00:10:00",
+					"1234567890.12345678901234567890", "0.1", "1"
+				),
+				entry("invalid-date", "2024-11-15 00:10:00", "1", "0.1", "1"),
+				entry("2024-11-15 00:00:00", "2024-11-15 00:10:00", "1", "1.123456789012345678901", "1"),
+				entry("2024-11-15 00:00:00", "2024-11-15 00:10:00", "1", "0.1", "12345678901.1234567890123456789")
+			)
+		));
+
+		assertThat(result.command().records()).singleElement().satisfies(record ->
+			assertThat(record.steps()).isEqualByComparingTo("1234567890.12345678901234567890")
+		);
+		assertThat(result.invalidEntries())
+			.extracting(ActivityEntryValidationError::index, ActivityEntryValidationError::field,
+				ActivityEntryValidationError::code)
+			.containsExactly(
+				org.assertj.core.groups.Tuple.tuple(1, "period.from", "ACTIVITY_INVALID_PERIOD"),
+				org.assertj.core.groups.Tuple.tuple(2, "distance.value", "ACTIVITY_INVALID_DISTANCE"),
+				org.assertj.core.groups.Tuple.tuple(3, "calories.value", "ACTIVITY_INVALID_CALORIES")
+			);
+	}
+
+	@Test
 	void recordkey와_data_source_오류는_전체_요청을_거부한다() {
 		assertThatThrownBy(() -> normalizer.normalize(upload("SamsungHealth", List.of(), "steps", "  ")))
 			.isInstanceOfSatisfying(BusinessException.class, exception ->

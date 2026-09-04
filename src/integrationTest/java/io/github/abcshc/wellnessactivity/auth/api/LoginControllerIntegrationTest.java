@@ -72,4 +72,14 @@ class LoginControllerIntegrationTest {
 			.andExpect(jsonPath("$.fieldErrors[?(@.field == 'email')]").isNotEmpty())
 			.andExpect(jsonPath("$.fieldErrors[?(@.field == 'password')]").isNotEmpty());
 	}
+
+	@Test
+	void 앞뒤_공백이_있는_이메일은_로그인_요청에서도_400_오류를_반환한다() throws Exception {
+		mockMvc.perform(post("/api/v1/auth/login").contentType(MediaType.APPLICATION_JSON).content("""
+			{"email":" login@example.com ","password":"password"}
+			"""))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+			.andExpect(jsonPath("$.fieldErrors[?(@.field == 'email')]").isNotEmpty());
+	}
 }
