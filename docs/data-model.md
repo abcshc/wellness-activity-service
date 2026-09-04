@@ -76,12 +76,14 @@ erDiagram
 | `member_id` | `BIGINT` | NOT NULL, FK | 토큰 소유 회원 |
 | `token_hash` | `CHAR(64)` | NOT NULL, UNIQUE (`uk_refresh_tokens_token_hash`) | Refresh Token의 SHA-256 해시 |
 | `family_id` | `CHAR(36)` | NOT NULL | 로그인·회전으로 이어지는 토큰 계열 식별자 |
-| `status` | `VARCHAR(10)` | NOT NULL | `ACTIVE`, `ROTATED`, `REVOKED` 상태 |
+| `status` | `VARCHAR(10)` | NOT NULL | `RefreshTokenStatus` enum으로 관리하는 토큰 상태 |
 | `issued_at` | `DATETIME(6)` | NOT NULL | 발급·회전 시각 |
 | `expires_at` | `DATETIME(6)` | NOT NULL | 발급·회전 시점부터 14일 후 만료 시각 |
 | `replaced_by_token_id` | `BIGINT` | FK, NULL 허용 | 회전으로 발급된 후속 토큰 |
 
 원문 Refresh Token은 저장하지 않습니다. 이전 토큰을 삭제하지 않고 회전 이력을 남겨 재사용을 감지하며, 재사용이 감지되면 같은 계열의 활성 토큰을 폐기합니다.
+
+상태 전이는 애플리케이션의 `RefreshTokenStatus` enum과 서비스 규칙으로 관리합니다. DB에는 PK·FK·UNIQUE·인덱스만 두며, 상태값의 `CHECK` 제약조건은 두지 않습니다.
 
 `idx_refresh_tokens_member_status`, `idx_refresh_tokens_family_status`, `idx_refresh_tokens_status_expires_at` 인덱스는 회원별 활성 토큰 조회, 계열 폐기, 만료 토큰 정리에 사용합니다.
 

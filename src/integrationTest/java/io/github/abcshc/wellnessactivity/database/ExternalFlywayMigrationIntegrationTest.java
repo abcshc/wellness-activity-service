@@ -97,7 +97,7 @@ class ExternalFlywayMigrationIntegrationTest {
 			Integer.class
 		);
 
-		assertThat(historyCount).isEqualTo(7);
+		assertThat(historyCount).isEqualTo(8);
 		assertThat(membersTableCount).isEqualTo(1);
 		assertThat(refreshTokensTableCount).isEqualTo(1);
 		assertThat(memberActivityKeysTableCount).isEqualTo(1);

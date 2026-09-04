@@ -30,8 +30,23 @@ class FlywayMySqlIntegrationTest {
 
 		assertThat(flyway.info().all())
 			.extracting(migration -> migration.getVersion().getVersion())
-			.containsExactly("01", "02", "03", "04", "05", "06", "07");
-		assertThat(historyCount).isEqualTo(7);
+			.containsExactly("01", "02", "03", "04", "05", "06", "07", "08");
+		assertThat(historyCount).isEqualTo(8);
+	}
+
+	@Test
+	void 데이터_유효성_규칙은_CHECK_제약조건이_아닌_애플리케이션에서_관리한다() {
+		Integer checkConstraintCount = jdbcTemplate.queryForObject(
+			"""
+				select count(*)
+				from information_schema.table_constraints
+				where table_schema = database()
+				  and constraint_type = 'CHECK'
+				""",
+			Integer.class
+		);
+
+		assertThat(checkConstraintCount).isZero();
 	}
 
 	@Test
