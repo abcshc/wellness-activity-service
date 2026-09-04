@@ -13,13 +13,13 @@ import java.util.function.Function;
 import org.springframework.stereotype.Service;
 
 @Service
-public class ActivitySummaryService {
+public class ActivitySummaryAssembler {
 
 	private static final BigDecimal ZERO = BigDecimal.ZERO;
 
 	private final DailyActivitySummaryRepository dailyActivitySummaryRepository;
 
-	public ActivitySummaryService(DailyActivitySummaryRepository dailyActivitySummaryRepository) {
+	public ActivitySummaryAssembler(DailyActivitySummaryRepository dailyActivitySummaryRepository) {
 		this.dailyActivitySummaryRepository = dailyActivitySummaryRepository;
 	}
 
@@ -32,7 +32,7 @@ public class ActivitySummaryService {
 			throw new IllegalArgumentException("from은 to보다 늦을 수 없습니다.");
 		}
 		Map<LocalDate, MutableActivityTotal> totals = dailyTotals(from, to);
-		apply(
+		mergeSummaries(
 			totals,
 			dailyActivitySummaryRepository.findSummaries(memberActivityKey, from, to),
 			DailyActivitySummaryView::activityDate
@@ -53,7 +53,7 @@ public class ActivitySummaryService {
 			throw new IllegalArgumentException("from은 to보다 늦을 수 없습니다.");
 		}
 		Map<YearMonth, MutableActivityTotal> totals = monthlyTotals(from, to);
-		apply(
+		mergeSummaries(
 			totals,
 			dailyActivitySummaryRepository.findSummaries(memberActivityKey, from.atDay(1), to.atEndOfMonth()),
 			view -> YearMonth.from(view.activityDate())
@@ -81,7 +81,7 @@ public class ActivitySummaryService {
 		return totals;
 	}
 
-	private <T> void apply(
+	private <T> void mergeSummaries(
 		Map<T, MutableActivityTotal> totals,
 		List<DailyActivitySummaryView> summaries,
 		Function<DailyActivitySummaryView, T> labelExtractor

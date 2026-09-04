@@ -36,7 +36,7 @@ class ActivityUploadServiceIntegrationTest {
 	private ActivityUploadService activityUploadService;
 
 	@Autowired
-	private ActivitySummaryService activitySummaryService;
+	private ActivitySummaryAssembler activitySummaryAssembler;
 
 	@Autowired
 	private StepRecordRepository stepRecordRepository;
@@ -133,13 +133,13 @@ class ActivityUploadServiceIntegrationTest {
 			new DailySummaryRow(LocalDate.of(2024, 11, 14), decimal("50"), decimal("1"), decimal("5"), decimal("0")),
 			new DailySummaryRow(LocalDate.of(2024, 11, 15), decimal("50"), decimal("1"), decimal("5"), decimal("0"))
 		);
-		assertThat(activitySummaryService.summarizeDaily(
+		assertThat(activitySummaryAssembler.summarizeDaily(
 			activityKey, LocalDate.of(2024, 11, 14), LocalDate.of(2024, 11, 15)
 		)).containsExactly(
 			new DailyActivitySummary(LocalDate.of(2024, 11, 14), decimal("50"), decimal("1"), decimal("5")),
 			new DailyActivitySummary(LocalDate.of(2024, 11, 15), decimal("50"), decimal("1"), decimal("5"))
 		);
-		assertThat(activitySummaryService.summarizeMonthly(
+		assertThat(activitySummaryAssembler.summarizeMonthly(
 			activityKey, YearMonth.of(2024, 11), YearMonth.of(2024, 11)
 		)).containsExactly(new MonthlyActivitySummary(
 			YearMonth.of(2024, 11), decimal("100"), decimal("2"), decimal("10")

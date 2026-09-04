@@ -21,17 +21,17 @@ import org.mockito.Mockito;
 class ActivitySummaryQueryServiceTest {
 
 	private final MemberActivityKeyRepository memberActivityKeyRepository = Mockito.mock(MemberActivityKeyRepository.class);
-	private final ActivitySummaryService activitySummaryService = Mockito.mock(ActivitySummaryService.class);
+	private final ActivitySummaryAssembler activitySummaryAssembler = Mockito.mock(ActivitySummaryAssembler.class);
 	private final ActivitySummaryQueryService activitySummaryQueryService = new ActivitySummaryQueryService(
 		memberActivityKeyRepository,
-		activitySummaryService
+		activitySummaryAssembler
 	);
 
 	@Test
 	void 소유한_recordkey의_일별_요약을_조회한다() {
 		MemberActivityKeyEntity activityKey = activityKey(1L);
 		when(memberActivityKeyRepository.findByRecordKey("record-key-001")).thenReturn(Optional.of(activityKey));
-		when(activitySummaryService.summarizeDaily(
+		when(activitySummaryAssembler.summarizeDaily(
 			activityKey, LocalDate.of(2024, 11, 14), LocalDate.of(2024, 11, 15)
 		)).thenReturn(List.of(new DailyActivitySummary(
 			LocalDate.of(2024, 11, 14), BigDecimal.ONE, BigDecimal.ZERO, BigDecimal.ZERO
@@ -42,7 +42,7 @@ class ActivitySummaryQueryServiceTest {
 		);
 
 		assertThat(result).hasSize(1);
-		verify(activitySummaryService).summarizeDaily(
+		verify(activitySummaryAssembler).summarizeDaily(
 			activityKey, LocalDate.of(2024, 11, 14), LocalDate.of(2024, 11, 15)
 		);
 	}

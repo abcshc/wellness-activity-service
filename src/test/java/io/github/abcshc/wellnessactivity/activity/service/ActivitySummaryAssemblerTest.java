@@ -16,10 +16,10 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-class ActivitySummaryServiceTest {
+class ActivitySummaryAssemblerTest {
 
 	private final DailyActivitySummaryRepository dailyActivitySummaryRepository = Mockito.mock(DailyActivitySummaryRepository.class);
-	private final ActivitySummaryService activitySummaryService = new ActivitySummaryService(dailyActivitySummaryRepository);
+	private final ActivitySummaryAssembler activitySummaryAssembler = new ActivitySummaryAssembler(dailyActivitySummaryRepository);
 
 	@Test
 	void 일별_집계_행을_조회하고_없는_날짜는_0으로_채운다() {
@@ -27,7 +27,7 @@ class ActivitySummaryServiceTest {
 			summary("2024-11-15", "150", "2", "16", "0")
 		));
 
-		List<DailyActivitySummary> result = activitySummaryService.summarizeDaily(
+		List<DailyActivitySummary> result = activitySummaryAssembler.summarizeDaily(
 			activityKey(), LocalDate.of(2024, 11, 14), LocalDate.of(2024, 11, 15)
 		);
 
@@ -48,7 +48,7 @@ class ActivitySummaryServiceTest {
 			summary("2024-11-15", "50", "1", "5", "0")
 		));
 
-		assertThat(activitySummaryService.summarizeDaily(
+		assertThat(activitySummaryAssembler.summarizeDaily(
 			activityKey(), LocalDate.of(2024, 11, 14), LocalDate.of(2024, 11, 15)
 		)).containsExactly(
 			new DailyActivitySummary(LocalDate.of(2024, 11, 14), decimal("50"), decimal("1"), decimal("5")),
@@ -62,7 +62,7 @@ class ActivitySummaryServiceTest {
 			summary("2024-11-15", "150", "0.12", "5", "2")
 		));
 
-		assertThat(activitySummaryService.summarizeDaily(
+		assertThat(activitySummaryAssembler.summarizeDaily(
 			activityKey(), LocalDate.of(2024, 11, 15), LocalDate.of(2024, 11, 15)
 		)).containsExactly(new DailyActivitySummary(
 			LocalDate.of(2024, 11, 15), decimal("150"), decimal("0.12"), decimal("7")
@@ -76,7 +76,7 @@ class ActivitySummaryServiceTest {
 			summary("2024-04-01", "10", "0.1", "0", "1")
 		));
 
-		assertThat(activitySummaryService.summarizeMonthly(
+		assertThat(activitySummaryAssembler.summarizeMonthly(
 			activityKey(), YearMonth.of(2024, 3), YearMonth.of(2024, 5)
 		)).containsExactly(
 			new MonthlyActivitySummary(YearMonth.of(2024, 3), decimal("10"), decimal("0.1"), decimal("1")),

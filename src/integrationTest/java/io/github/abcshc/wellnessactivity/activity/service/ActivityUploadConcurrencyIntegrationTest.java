@@ -42,7 +42,7 @@ class ActivityUploadConcurrencyIntegrationTest {
 	private ActivityUploadService activityUploadService;
 
 	@Autowired
-	private ActivitySummaryService activitySummaryService;
+	private ActivitySummaryAssembler activitySummaryAssembler;
 
 	@Autowired
 	private StepRecordRepository stepRecordRepository;
@@ -153,10 +153,10 @@ class ActivityUploadConcurrencyIntegrationTest {
 		assertThat(storedDailySummaries(key.getId())).containsExactly(
 			new StoredDailySummary(SUMMARY_DATE, decimal(steps), decimal(distance), decimal(calories), BigDecimal.ZERO)
 		);
-		assertThat(activitySummaryService.summarizeDaily(key, SUMMARY_DATE, SUMMARY_DATE)).containsExactly(
+		assertThat(activitySummaryAssembler.summarizeDaily(key, SUMMARY_DATE, SUMMARY_DATE)).containsExactly(
 			new DailyActivitySummary(SUMMARY_DATE, decimal(steps), decimal(distance), decimal(calories))
 		);
-		assertThat(activitySummaryService.summarizeMonthly(key, SUMMARY_MONTH, SUMMARY_MONTH)).containsExactly(
+		assertThat(activitySummaryAssembler.summarizeMonthly(key, SUMMARY_MONTH, SUMMARY_MONTH)).containsExactly(
 			new MonthlyActivitySummary(SUMMARY_MONTH, decimal(steps), decimal(distance), decimal(calories))
 		);
 	}

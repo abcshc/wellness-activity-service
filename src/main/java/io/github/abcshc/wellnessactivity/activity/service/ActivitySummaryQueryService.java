@@ -20,28 +20,28 @@ public class ActivitySummaryQueryService {
 	private static final long MAX_MONTHLY_RANGE_MONTHS = 24;
 
 	private final MemberActivityKeyRepository memberActivityKeyRepository;
-	private final ActivitySummaryService activitySummaryService;
+	private final ActivitySummaryAssembler activitySummaryAssembler;
 
 	public ActivitySummaryQueryService(
 		MemberActivityKeyRepository memberActivityKeyRepository,
-		ActivitySummaryService activitySummaryService
+		ActivitySummaryAssembler activitySummaryAssembler
 	) {
 		this.memberActivityKeyRepository = memberActivityKeyRepository;
-		this.activitySummaryService = activitySummaryService;
+		this.activitySummaryAssembler = activitySummaryAssembler;
 	}
 
 	public List<DailyActivitySummary> daily(Long memberId, String recordKey, String from, String to) {
 		LocalDate startDate = parseDate(from);
 		LocalDate endDate = parseDate(to);
 		validateDailyRange(startDate, endDate);
-		return activitySummaryService.summarizeDaily(ownedActivityKey(memberId, recordKey), startDate, endDate);
+		return activitySummaryAssembler.summarizeDaily(ownedActivityKey(memberId, recordKey), startDate, endDate);
 	}
 
 	public List<MonthlyActivitySummary> monthly(Long memberId, String recordKey, String from, String to) {
 		YearMonth startMonth = parseYearMonth(from);
 		YearMonth endMonth = parseYearMonth(to);
 		validateMonthlyRange(startMonth, endMonth);
-		return activitySummaryService.summarizeMonthly(ownedActivityKey(memberId, recordKey), startMonth, endMonth);
+		return activitySummaryAssembler.summarizeMonthly(ownedActivityKey(memberId, recordKey), startMonth, endMonth);
 	}
 
 	private MemberActivityKeyEntity ownedActivityKey(Long memberId, String recordKey) {
