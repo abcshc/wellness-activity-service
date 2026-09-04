@@ -26,4 +26,12 @@ class StepCaloriesEstimatorTest {
 		assertThat(estimate.caloriesKcal()).isEqualByComparingTo(BigDecimal.ZERO);
 		assertThat(estimate.version()).isNull();
 	}
+
+	@Test
+	void 걸음수가_0이면_원천_칼로리가_0이어도_추정_규칙을_기록하지_않는다() {
+		StepCaloriesEstimator.StepCaloriesEstimate estimate = estimator.estimate(BigDecimal.ZERO, BigDecimal.ZERO);
+
+		assertThat(estimate.caloriesKcal()).isEqualByComparingTo(BigDecimal.ZERO);
+		assertThat(estimate.version()).isNull();
+	}
 }
