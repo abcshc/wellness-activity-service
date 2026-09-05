@@ -4,6 +4,12 @@
 
 회원·인증 토큰·걸음수 원본 이벤트와 KST 일별 활동 집계를 위한 `members`, `refresh_tokens`, `member_activity_keys`, `step_records`, `daily_activity_summaries` 테이블을 구현했습니다. 원본 이벤트는 복구·재집계의 기준으로 보관하고, 일별 집계는 조회용 파생 데이터로 사용합니다.
 
+## ERD
+
+아래 이미지는 Flyway V08까지 적용한 MySQL 스키마를 DataGrip에서 생성한 ERD입니다. 이미지에는 테이블·컬럼·타입·FK 관계와 컬럼 주석을 표시합니다. 스키마의 정본은 Flyway SQL이며, 이 문서의 Mermaid ERD와 제약조건 표는 이미지에서 한눈에 드러나지 않는 복합 제약조건을 함께 설명합니다.
+
+![MySQL 데이터 모델 ERD](assets/erd.png)
+
 ```mermaid
 erDiagram
     MEMBERS {
@@ -55,6 +61,22 @@ erDiagram
     MEMBER_ACTIVITY_KEYS ||--o{ STEP_RECORDS : contains
     MEMBER_ACTIVITY_KEYS ||--o{ DAILY_ACTIVITY_SUMMARIES : summarizes
 ```
+
+### 다이어그램 표기 보완
+
+DataGrip 이미지의 PK·FK 아이콘과 관계선 외에, 다음 제약조건과 상태값은 문서로 명시한다.
+
+| 구분 | 대상 | 의미 |
+| --- | --- | --- |
+| UNIQUE | `members.email` | 같은 이메일의 중복 회원가입을 막는다. |
+| UNIQUE | `refresh_tokens.token_hash` | 같은 Refresh Token 해시를 한 번만 저장한다. |
+| UNIQUE | `member_activity_keys.record_key` | 하나의 외부 `recordkey`를 한 회원에게만 연결한다. |
+| 복합 UNIQUE | `step_records(member_activity_key_id, provider, started_at_utc, ended_at_utc)` | 같은 활동 키·원천·기간의 원본 이벤트 재전송을 식별한다. |
+| 복합 UNIQUE | `daily_activity_summaries(member_activity_key_id, activity_date)` | 활동 키와 KST 활동일 조합마다 일별 집계 행을 하나만 둔다. |
+| 보조 인덱스 | `refresh_tokens`의 회원·계열·상태/만료 인덱스 | 활성 토큰 조회, 계열 폐기, 만료 토큰 처리를 지원한다. |
+| 보조 인덱스 | `member_activity_keys.member_id`, `step_records(member_activity_key_id, started_at_utc)` | 회원 소유권 확인과 활동 기간 조회를 지원한다. |
+
+`refresh_tokens.status`의 허용 상태(`ACTIVE`, `ROTATED`, `REVOKED`)와 `step_records.provider`의 내부 원천 값(`SAMSUNG_HEALTH`, `APPLE_HEALTH`, `HEALTH_CONNECT`)은 DB `CHECK` 제약조건이 아니라 애플리케이션 enum과 입력 정규화 규칙으로 관리한다. DB는 관계·유일성·조회 성능을 위한 PK·FK·UNIQUE·인덱스를 보장한다.
 
 ## members
 
