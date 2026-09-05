@@ -4,11 +4,11 @@
 
 건강활동 기능은 작은 규칙부터 실제 MySQL 저장까지, 범위를 조금씩 넓혀가며 확인합니다. 아래 순서를 보면 각 테스트가 무엇을 책임지는지 쉽게 알 수 있습니다.
 
-1. 단위 테스트로 입력 정규화, 수치 처리, 자정 경계 집계 규칙을 검증한다.
-2. Testcontainers MySQL 통합 테스트로 유니크 제약조건, 멱등 저장, 인증·권한을 검증한다.
-3. 실제 API 전체 흐름에서 원본 입력 저장, 재전송, KST 일별 집계, Daily·Monthly 조회 결과를 검증한다.
-4. 최대 조회 범위에서 연속된 빈 버킷과 범위 초과 오류를 API 계약으로 검증한다.
-5. 요청 크기와 동시 업로드의 검증 범위·실행 방법을 [건강활동 업로드 검증 방법](submission/load-test-results.md)에 정리한다.
+1. 단위 테스트로 입력 정규화, 수치 처리, 자정 경계 집계 규칙을 검증합니다.
+2. Testcontainers MySQL 통합 테스트로 유니크 제약조건, 멱등 저장, 인증·권한을 검증합니다.
+3. 실제 API 전체 흐름에서 원본 입력 저장, 재전송, KST 일별 집계, Daily·Monthly 조회 결과를 검증합니다.
+4. 최대 조회 범위에서 연속된 빈 버킷과 범위 초과 오류를 API 계약으로 검증합니다.
+5. 요청 크기와 동시 업로드의 검증 범위·실행 방법을 [건강활동 업로드 검증 방법](submission/load-test-results.md)에 정리합니다.
 
 ## 테스트 계층
 
@@ -31,10 +31,10 @@
 
 `MySqlTestContainerConfiguration`은 테스트 자체가 아니라, 통합 테스트가 사용할 MySQL 실행 환경을 마련해 주는 공용 설정입니다. 각 통합 테스트가 이 설정을 `@Import`하면 다음 순서로 동작합니다.
 
-1. Testcontainers가 Docker에서 `mysql:8.4.8` 컨테이너를 시작한다.
-2. `@ServiceConnection`이 컨테이너의 접속 정보를 Spring Boot DataSource에 연결한다.
-3. Flyway가 실제 MySQL에 마이그레이션을 적용하고, Hibernate가 매핑을 검증한다.
-4. `MockMvc`가 같은 JVM의 컨트롤러를 호출하고, 저장 결과를 실제 MySQL에서 확인한다.
+1. Testcontainers가 Docker에서 `mysql:8.4.8` 컨테이너를 시작합니다.
+2. `@ServiceConnection`이 컨테이너의 접속 정보를 Spring Boot DataSource에 연결합니다.
+3. Flyway가 실제 MySQL에 마이그레이션을 적용하고, Hibernate가 매핑을 검증합니다.
+4. `MockMvc`가 같은 JVM의 컨트롤러를 호출하고, 저장 결과를 실제 MySQL에서 확인합니다.
 
 즉, 이 테스트는 “애플리케이션과 실제 MySQL이 함께 잘 동작하는가?”를 확인하는 통합 테스트입니다. 다만 외부 HTTP 서버에 요청을 보내거나, 여러 사용자를 동시에 만드는 부하 테스트는 아닙니다.
 
